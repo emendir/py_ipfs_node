@@ -126,12 +126,16 @@ extern char* PubSubPeers(char* repoPath, char* topic);
 
 // CreateRepo initializes a new IPFS repository
 extern int CreateRepo(char* repoPath);
+extern int RunNode(char* repoPath);
 
 // PubSubEnable enables pubsub on an IPFS node configuration
 extern int PubSubEnable(char* repoPath);
 
 // GetNodeID gets the ID of the IPFS node
 extern char* GetNodeID(char* repoPath);
+
+// CleanupNode explicitly releases a node by path
+extern int CleanupNode(char* repoPath);
 
 #ifdef __cplusplus
 }

@@ -259,7 +259,7 @@ class IPFSNode:
         # Initialize the repository if it doesn't exist
         if not os.path.exists(os.path.join(self._repo_path, "config")):
             self._init_repo()
-            
+        self._lib.RunNode(ctypes.c_char_p(self._repo_path.encode('utf-8')))
         # Enable pubsub if requested
         if self._enable_pubsub and self._online:
             self._enable_pubsub_config()
@@ -267,7 +267,10 @@ class IPFSNode:
         # Get the node ID if online
         if self._online:
             self._peer_id = self.get_node_id()
-    
+    def _run(self):
+        pass
+    def _stop(self):
+        pass
     def _load_library(self):
         """Load the Kubo shared library."""
         # Determine library name based on platform
@@ -288,6 +291,10 @@ class IPFSNode:
             raise RuntimeError(f"Failed to load Kubo library: {e}")
         
         # Define function signatures
+        self._lib.RunNode.argtypes = [ctypes.c_char_p]
+        self._lib.RunNode.restype = ctypes.c_int
+        
+        
         self._lib.CreateRepo.argtypes = [ctypes.c_char_p]
         self._lib.CreateRepo.restype = ctypes.c_int
         
