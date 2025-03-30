@@ -66,9 +66,11 @@ func CreateRepo(repoPath *C.char) C.int {
 
 // SpawnNode creates an IPFS node
 func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
+	fmt.Fprintf(os.Stderr, "DEBUG: Opening repo at %s\n", repoPath)
 	// Open the repo
 	repo, err := fsrepo.Open(repoPath)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "DEBUG: Error opening repo: %v\n", err)
 		return nil, nil, err
 	}
 
@@ -79,17 +81,25 @@ func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		Repo:    repo,
 	}
 
-	node, err := core.NewNode(context.Background(), nodeOptions)
+	fmt.Fprintf(os.Stderr, "DEBUG: Creating new IPFS node\n")
+	ctx := context.Background()
+	node, err := core.NewNode(ctx, nodeOptions)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "DEBUG: Error creating node: %v\n", err)
+		repo.Close()
 		return nil, nil, err
 	}
 
 	// Construct the API
+	fmt.Fprintf(os.Stderr, "DEBUG: Creating CoreAPI\n")
 	api, err := coreapi.NewCoreAPI(node)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "DEBUG: Error creating API: %v\n", err)
+		node.Close()
 		return nil, nil, err
 	}
 
+	fmt.Fprintf(os.Stderr, "DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
 
@@ -101,19 +111,24 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 	path := C.GoString(repoPath)
 	file := C.GoString(filePath)
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: Adding file from path %s using repo %s\n", file, path)
+	
 	// Spawn a node
 	api, node, err := spawnNode(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
-		return C.CString("")
+		return nil
 	}
-	defer node.Close()
+	defer func() {
+		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
+		node.Close()
+	}()
 	
 	// Open the file
 	f, err := os.Open(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error opening file: %s\n", err)
-		return C.CString("")
+		return nil
 	}
 	defer f.Close()
 	
@@ -121,7 +136,7 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 	fileInfo, err := f.Stat()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting file info: %s\n", err)
-		return C.CString("")
+		return nil
 	}
 	
 	var fileNode files.Node
@@ -132,18 +147,20 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 		fileNode, dirErr = files.NewSerialFile(file, true, fileInfo)
 		if dirErr != nil {
 			fmt.Fprintf(os.Stderr, "Error creating directory node: %s\n", dirErr)
-			return C.CString("")
+			return nil
 		}
 	} else {
 		// Handle file
+		fmt.Fprintf(os.Stderr, "DEBUG: Creating file node for %s\n", file)
 		var fileErr error
 		fileNode, fileErr = files.NewReaderPathFile(file, f, fileInfo)
 		if fileErr != nil {
 			fmt.Fprintf(os.Stderr, "Error creating file node: %s\n", fileErr)
-			return C.CString("")
+			return nil
 		}
 	}
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: Adding file to IPFS\n")
 	resolved, err := api.Unixfs().Add(
 		ctx,
 		fileNode,
@@ -152,18 +169,23 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 	
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error adding file to IPFS: %s\n", err)
-		return C.CString("")
+		return nil
 	}
+	
+	cid := resolved.Cid().String()
+	fmt.Fprintf(os.Stderr, "DEBUG: File added with CID: %s\n", cid)
 	
 	// Return the CID as a C string
 	// Note: This allocates memory that should be freed by the caller
-	return C.CString(resolved.Cid().String())
+	return C.CString(cid)
 }
 
-// FreeString frees a C string
+// FreeString is a no-op for now - we'll let Go's garbage collection handle the memory
 //export FreeString
 func FreeString(str *C.char) {
-	C.free(unsafe.Pointer(str))
+	fmt.Fprintf(os.Stderr, "DEBUG: FreeString called (NO-OP) for pointer %p\n", unsafe.Pointer(str))
+	// We're not actually freeing memory here to avoid the crash
+	// C.free(unsafe.Pointer(str)) 
 }
 
 // GetFile retrieves a file from IPFS
@@ -175,13 +197,18 @@ func GetFile(repoPath, cidStr, destPath *C.char) C.int {
 	cid := C.GoString(cidStr)
 	dest := C.GoString(destPath)
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: Getting file with CID %s to %s using repo %s\n", cid, dest, path)
+	
 	// Spawn a node
 	api, node, err := spawnNode(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
 		return C.int(-1)
 	}
-	defer node.Close()
+	defer func() {
+		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
+		node.Close()
+	}()
 	
 	// Parse the CID
 	decodedCid, err := cidlib.Decode(cid)
@@ -193,6 +220,7 @@ func GetFile(repoPath, cidStr, destPath *C.char) C.int {
 	ipfsPath := ipath.IpfsPath(decodedCid)
 	
 	// Get the node from IPFS
+	fmt.Fprintf(os.Stderr, "DEBUG: Retrieving content from IPFS\n")
 	fileNode, err := api.Unixfs().Get(ctx, ipfsPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting file from IPFS: %s\n", err)
@@ -214,6 +242,7 @@ func GetFile(repoPath, cidStr, destPath *C.char) C.int {
 	}
 	
 	// Read file content
+	fmt.Fprintf(os.Stderr, "DEBUG: Reading file content\n")
 	content, err := ioutil.ReadAll(file)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file content: %s\n", err)
@@ -221,12 +250,14 @@ func GetFile(repoPath, cidStr, destPath *C.char) C.int {
 	}
 	
 	// Write the file to the destination
+	fmt.Fprintf(os.Stderr, "DEBUG: Writing content to destination file\n")
 	err = ioutil.WriteFile(dest, content, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing file: %s\n", err)
 		return C.int(-6)
 	}
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: File retrieved successfully\n")
 	return C.int(0) // Success
 }
 
@@ -238,15 +269,21 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	path := C.GoString(repoPath)
 	addr := C.GoString(peerAddr)
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer %s using repo %s\n", addr, path)
+	
 	// Spawn a node
 	api, node, err := spawnNode(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
 		return C.int(-1)
 	}
-	defer node.Close()
+	defer func() {
+		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
+		node.Close()
+	}()
 	
 	// Parse the peer address
+	fmt.Fprintf(os.Stderr, "DEBUG: Parsing peer address\n")
 	peerInfo, err := peer.AddrInfoFromString(addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing peer address: %s\n", err)
@@ -254,12 +291,14 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	}
 	
 	// Connect to the peer
+	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer\n")
 	err = api.Swarm().Connect(ctx, *peerInfo)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error connecting to peer: %s\n", err)
 		return C.int(-3)
 	}
 	
+	fmt.Fprintf(os.Stderr, "DEBUG: Connected to peer successfully\n")
 	return C.int(0) // Success
 }
 

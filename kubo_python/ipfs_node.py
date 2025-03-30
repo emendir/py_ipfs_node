@@ -99,16 +99,28 @@ class IPFSNode:
         repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
         file_path_c = ctypes.c_char_p(os.path.abspath(file_path).encode('utf-8'))
         
-        cid_ptr = self._lib.AddFile(repo_path, file_path_c)
-        cid = ctypes.string_at(cid_ptr).decode('utf-8')
-        
-        # Free the memory allocated by C.CString in Go
-        self._lib.FreeString(cid_ptr)
-        
-        if not cid:
-            raise RuntimeError("Failed to add file to IPFS")
-        
-        return cid
+        try:
+            cid_ptr = self._lib.AddFile(repo_path, file_path_c)
+            if not cid_ptr:
+                raise RuntimeError("Failed to add file to IPFS")
+                
+            # Copy the string content before freeing the pointer
+            cid = ctypes.string_at(cid_ptr).decode('utf-8')
+            
+            # Store the memory freeing operation in a separate try block
+            try:
+                # Free the memory allocated by C.CString in Go
+                self._lib.FreeString(cid_ptr)
+            except Exception as e:
+                print(f"Warning: Failed to free memory: {e}")
+            
+            if not cid:
+                raise RuntimeError("Failed to add file to IPFS")
+            
+            return cid
+        except Exception as e:
+            # Handle any exceptions during the process
+            raise RuntimeError(f"Error adding file to IPFS: {e}")
     
     def add_directory(self, dir_path: str) -> str:
         """
@@ -137,13 +149,17 @@ class IPFSNode:
         Returns:
             bool: True if the file was successfully retrieved, False otherwise.
         """
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        cid_c = ctypes.c_char_p(cid.encode('utf-8'))
-        dest_path_c = ctypes.c_char_p(os.path.abspath(dest_path).encode('utf-8'))
-        
-        result = self._lib.GetFile(repo_path, cid_c, dest_path_c)
-        
-        return result == 0
+        try:
+            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+            cid_c = ctypes.c_char_p(cid.encode('utf-8'))
+            dest_path_c = ctypes.c_char_p(os.path.abspath(dest_path).encode('utf-8'))
+            
+            result = self._lib.GetFile(repo_path, cid_c, dest_path_c)
+            
+            return result == 0
+        except Exception as e:
+            # Handle any exceptions during the process
+            raise RuntimeError(f"Error retrieving file from IPFS: {e}")
     
     def connect_to_peer(self, peer_addr: str) -> bool:
         """
@@ -158,12 +174,16 @@ class IPFSNode:
         if not self._online:
             raise RuntimeError("Cannot connect to peers in offline mode")
         
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        peer_addr_c = ctypes.c_char_p(peer_addr.encode('utf-8'))
-        
-        result = self._lib.ConnectToPeer(repo_path, peer_addr_c)
-        
-        return result == 0
+        try:
+            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+            peer_addr_c = ctypes.c_char_p(peer_addr.encode('utf-8'))
+            
+            result = self._lib.ConnectToPeer(repo_path, peer_addr_c)
+            
+            return result == 0
+        except Exception as e:
+            # Handle any exceptions during the process
+            raise RuntimeError(f"Error connecting to peer: {e}")
     
     def add_bytes(self, data: bytes, filename: Optional[str] = None) -> str:
         """
@@ -178,6 +198,7 @@ class IPFSNode:
         """
         # Create a temporary file
         temp_file = None
+        temp_file_path = None
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=filename if filename else '') as temp_file:
                 temp_file.write(data)
@@ -185,10 +206,16 @@ class IPFSNode:
             
             # Add the temporary file to IPFS
             return self.add_file(temp_file_path)
+        except Exception as e:
+            raise RuntimeError(f"Error adding bytes to IPFS: {e}")
         finally:
             # Clean up the temporary file
-            if temp_file is not None and os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            if temp_file_path is not None and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception:
+                    # Silently ignore cleanup errors
+                    pass
     
     def add_str(self, content: str, filename: Optional[str] = None) -> str:
         """
@@ -214,23 +241,31 @@ class IPFSNode:
             bytes: The retrieved data.
         """
         temp_file = None
+        temp_file_path = None
         try:
             # Create a temporary file to store the retrieved data
             temp_file = tempfile.NamedTemporaryFile(delete=False)
+            temp_file_path = temp_file.name
             temp_file.close()
             
             # Get the file from IPFS
-            success = self.get_file(cid, temp_file.name)
+            success = self.get_file(cid, temp_file_path)
             if not success:
                 raise RuntimeError(f"Failed to retrieve data for CID: {cid}")
             
             # Read the data from the temporary file
-            with open(temp_file.name, 'rb') as f:
+            with open(temp_file_path, 'rb') as f:
                 return f.read()
+        except Exception as e:
+            raise RuntimeError(f"Error retrieving bytes from IPFS: {e}")
         finally:
             # Clean up the temporary file
-            if temp_file is not None and os.path.exists(temp_file.name):
-                os.unlink(temp_file.name)
+            if temp_file_path is not None and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception:
+                    # Silently ignore cleanup errors
+                    pass
     
     def get_str(self, cid: str, encoding: str = 'utf-8') -> str:
         """
