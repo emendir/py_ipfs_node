@@ -94,6 +94,30 @@ extern int GetFile(char* repoPath, char* cidStr, char* destPath);
 // ConnectToPeer connects to a peer
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
 
+// PubSubEnable enables pubsub on an IPFS node configuration
+extern int PubSubEnable(char* repoPath);
+
+// PubSubListTopics lists the topics the node is subscribed to
+extern char* PubSubListTopics(char* repoPath);
+
+// PubSubPublish publishes a message to a topic
+extern int PubSubPublish(char* repoPath, char* topic, void* data, int dataLen);
+
+// PubSubSubscribe subscribes to a topic
+extern long long PubSubSubscribe(char* repoPath, char* topic);
+
+// PubSubNextMessage gets the next message from a subscription
+extern char* PubSubNextMessage(long long subID);
+
+// PubSubUnsubscribe unsubscribes from a topic
+extern int PubSubUnsubscribe(long long subID);
+
+// PubSubPeers lists peers participating in a topic
+extern char* PubSubPeers(char* repoPath, char* topic);
+
+// GetNodeID gets the ID of the IPFS node
+extern char* GetNodeID(char* repoPath);
+
 #ifdef __cplusplus
 }
 #endif
