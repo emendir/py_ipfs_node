@@ -85,7 +85,7 @@ extern int CreateRepo(char* repoPath);
 // AddFile adds a file to IPFS
 extern char* AddFile(char* repoPath, char* filePath);
 
-// FreeString frees a C string
+// FreeString is a no-op for now - we'll let Go's garbage collection handle the memory
 extern void FreeString(char* str);
 
 // GetFile retrieves a file from IPFS
