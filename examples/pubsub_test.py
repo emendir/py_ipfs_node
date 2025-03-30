@@ -34,15 +34,21 @@ def publisher_thread():
     with IPFSNode(pub_repo_path) as node:
         print(f"Publisher node created with ID: {node.peer_id}")
         
-        # Connect to the subscriber
-        if subscriber_id:
-            print(f"Connecting to subscriber: {subscriber_id}")
+        # Connect to the subscriber by multiaddress
+        if subscriber_addr:
+            print(f"Connecting to subscriber: {subscriber_addr}")
             try:
+                success = node.connect_to_peer(subscriber_addr)
+                if success:
+                    print("Successfully connected to subscriber")
+                else:
+                    print("Failed to connect to subscriber")
+                    
                 # Find a peer to connect to
                 peers = node.pubsub_peers()
-                print(f"Available peers: {peers}")
+                print(f"Available pubsub peers: {peers}")
             except Exception as e:
-                print(f"Error getting peers: {e}")
+                print(f"Error connecting to peer: {e}")
         
         time.sleep(2)  # Wait for subscriber to be ready
         
@@ -62,15 +68,25 @@ def publisher_thread():
                 
             time.sleep(1)
 
-# Global variable to store subscriber ID
+# Global variable to store subscriber information
 subscriber_id = ""
+subscriber_addr = ""
 
 def subscriber_thread():
     """Thread for subscribing to messages."""
-    global subscription, subscriber_id
+    global subscription, subscriber_id, subscriber_addr
     with IPFSNode(sub_repo_path) as node:
         # Store the subscriber ID
         subscriber_id = node.peer_id
+        
+        # Get the full address with IP and port
+        try:
+            # Create a multiaddress - this is normally provided by swarm.addrs but we'll
+            # construct a reasonable guess for localhost testing
+            subscriber_addr = f"/ip4/127.0.0.1/tcp/4001/p2p/{subscriber_id}"
+            print(f"Subscriber address: {subscriber_addr}")
+        except Exception as e:
+            print(f"Error getting subscriber address: {e}")
         print(f"Subscriber node created with ID: {subscriber_id}")
         
         # Subscribe to the topic
@@ -104,7 +120,7 @@ def main():
         sub_thread.start()
         
         # Wait for subscriber to initialize
-        time.sleep(3)
+        time.sleep(5)
         
         # Start publisher after subscriber is ready
         pub_thread = threading.Thread(target=publisher_thread)
