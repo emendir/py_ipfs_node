@@ -40,6 +40,9 @@ func init() {
 	plugins, _ = loader.NewPluginLoader("")
 	plugins.Initialize()
 	plugins.Inject()
+	
+	// Initialize the shared function reference for other files
+	spawnNodeFunc = AcquireNode
 }
 
 // CreateRepo initializes a new IPFS repository
@@ -102,6 +105,17 @@ func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	return api, node, nil
 }
 
+//export RunNode
+func RunNode(repoPath *C.char) C.int {
+	path := C.GoString(repoPath)
+	// Spawn a node
+	_, _, err := AcquireNode(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		return C.int(0)
+	}
+	return C.int(1) // Success
+}
 // ReleaseNode decreases the reference count for a node, closing it if no references remain
 func ReleaseNode(repoPath string) {
 	activeNodesMutex.Lock()

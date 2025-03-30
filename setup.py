@@ -57,12 +57,12 @@ def compile_go_library():
     if os.path.exists(output_path):
         print(f"Shared library already exists at {output_path}")
         return
-
+    print("Compiling go_src...")
     # Build the shared library
     build_cmd = [
         'go', 'build', '-buildmode=c-shared',
         '-o', output_path,
-        os.path.join(go_src_dir, 'kubo_wrapper.go')
+        go_src_dir
     ]
 
     print(f"Running: {' '.join(build_cmd)}")
