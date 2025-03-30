@@ -10,6 +10,7 @@ This library provides Python bindings for [Kubo](https://github.com/ipfs/kubo), 
 - Add and retrieve files/directories from IPFS
 - Connect to the IPFS network
 - Manage IPFS repositories
+- Publish and subscribe to IPFS PubSub topics
 
 ## Installation
 
@@ -25,6 +26,8 @@ pip install kubo-python
 
 ## Basic Usage
 
+### Working with Files
+
 ```python
 from kubo_python import IPFSNode
 
@@ -37,6 +40,41 @@ with IPFSNode.ephemeral() as node:
     # Retrieve a file from IPFS
     node.get_file(cid, "/path/to/destination.txt")
 ```
+
+### Using PubSub
+
+```python
+from kubo_python import IPFSNode
+
+with IPFSNode.ephemeral() as node:
+    # Subscribe to a topic
+    with node.pubsub_subscribe("my-topic") as subscription:
+        # Publish a message
+        node.pubsub_publish("my-topic", "Hello, IPFS world!")
+        
+        # Receive messages
+        message = subscription.next_message(timeout=2.0)
+        if message:
+            print(f"Received: {message.data.decode('utf-8')}")
+            
+        # Or use a callback
+        def on_message(msg):
+            print(f"Received via callback: {msg.data.decode('utf-8')}")
+            
+        subscription.subscribe(on_message)
+```
+
+## Documentation
+
+- [Installation Instructions](INSTALL.md)
+- [PubSub Documentation](docs/pubsub.md)
+
+## Examples
+
+- [Basic Usage](examples/basic_usage.py)
+- [File Sharing](examples/file_sharing.py)
+- [PubSub Example](examples/pubsub_example.py)
+- [Chat Application](examples/chat_app.py)
 
 ## License
 

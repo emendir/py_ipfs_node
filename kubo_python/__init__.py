@@ -1,3 +1,3 @@
-from .ipfs_node import IPFSNode
+from .ipfs_node import IPFSNode, IPFSMessage, IPFSSubscription
 
-__all__ = ["IPFSNode"]
+__all__ = ["IPFSNode", "IPFSMessage", "IPFSSubscription"]
