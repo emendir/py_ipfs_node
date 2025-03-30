@@ -27,16 +27,14 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 	
 	fmt.Fprintf(os.Stderr, "DEBUG: Adding file from path %s using repo %s\n", file, path)
 	
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return nil
 	}
-	defer func() {
-		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
-		node.Close()
-	}()
+	// Release the node when done (decreases reference count)
+	defer ReleaseNode(path)
 	
 	// Open the file
 	f, err := os.Open(file)
@@ -113,16 +111,14 @@ func GetFile(repoPath, cidStr, destPath *C.char) C.int {
 	
 	fmt.Fprintf(os.Stderr, "DEBUG: Getting file with CID %s to %s using repo %s\n", cid, dest, path)
 	
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.int(-1)
 	}
-	defer func() {
-		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
-		node.Close()
-	}()
+	// Release the node when done (decreases reference count)
+	defer ReleaseNode(path)
 	
 	// Parse the CID
 	decodedCid, err := cidlib.Decode(cid)

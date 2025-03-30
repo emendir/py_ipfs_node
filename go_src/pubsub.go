@@ -14,7 +14,6 @@ import (
 
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/boxo/coreiface/options"
-	"github.com/ipfs/kubo/core"
 	"github.com/libp2p/go-libp2p/core/peer"
 )
 
@@ -42,8 +41,7 @@ type subscriptionInfo struct {
 	mutex        sync.Mutex
 	ctx          context.Context
 	cancel       context.CancelFunc
-	node         *core.IpfsNode // Keep reference to node to prevent premature closing
-	api          iface.CoreAPI
+	repoPath     string // Store repo path instead of node reference
 }
 
 // PubSubListTopics lists the topics the node is subscribed to
@@ -52,13 +50,13 @@ func PubSubListTopics(repoPath *C.char) *C.char {
 	ctx := context.Background()
 	path := C.GoString(repoPath)
 
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
-	defer node.Close()
+	defer ReleaseNode(path)
 
 	// List topics
 	topics, err := api.PubSub().Ls(ctx)
@@ -88,13 +86,13 @@ func PubSubPublish(repoPath, topic *C.char, data unsafe.Pointer, dataLen C.int) 
 	// Convert data to Go byte slice
 	dataBytes := C.GoBytes(data, dataLen)
 
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.int(-1)
 	}
-	defer node.Close()
+	defer ReleaseNode(path)
 
 	// Publish message
 	err = api.PubSub().Publish(ctx, topicStr, dataBytes)
@@ -112,20 +110,23 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 	path := C.GoString(repoPath)
 	topicStr := C.GoString(topic)
 
-	// Spawn a node
-	ctx, cancel := context.WithCancel(context.Background())
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
-		cancel()
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.longlong(-1)
 	}
+	// Note: We don't release the node here because the subscription needs it
+	// The node will be released when the subscription is closed
+
+	// Create a context with cancel for this subscription
+	ctx, cancel := context.WithCancel(context.Background())
 
 	// Subscribe to topic
 	subscription, err := api.PubSub().Subscribe(ctx, topicStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error subscribing to topic: %s\n", err)
-		node.Close()
+		ReleaseNode(path) // Release the node since we failed
 		cancel()
 		return C.longlong(-2)
 	}
@@ -143,8 +144,7 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 		mutex:        sync.Mutex{},
 		ctx:          ctx,
 		cancel:       cancel,
-		node:         node,
-		api:          api,
+		repoPath:     path,
 	}
 	subscriptionsMutex.Unlock()
 
@@ -268,10 +268,8 @@ func PubSubUnsubscribe(subID C.longlong) C.int {
 		fmt.Fprintf(os.Stderr, "Error closing subscription: %s\n", err)
 	}
 
-	// Close the node
-	if err := subInfo.node.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error closing node: %s\n", err)
-	}
+	// Release the node associated with this subscription
+	ReleaseNode(subInfo.repoPath)
 
 	// Remove from map
 	delete(subscriptions, id)
@@ -287,13 +285,13 @@ func PubSubPeers(repoPath, topic *C.char) *C.char {
 	path := C.GoString(repoPath)
 	topicStr := C.GoString(topic)
 
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
-	defer node.Close()
+	defer ReleaseNode(path)
 
 	// List peers
 	var peers []peer.ID

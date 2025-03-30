@@ -21,16 +21,14 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	
 	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer %s using repo %s\n", addr, path)
 	
-	// Spawn a node
-	api, node, err := spawnNodeFunc(path)
+	// Get or create a node from the registry
+	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
 		return C.int(-1)
 	}
-	defer func() {
-		fmt.Fprintf(os.Stderr, "DEBUG: Closing IPFS node\n")
-		node.Close()
-	}()
+	// Release the node when done (decreases reference count)
+	defer ReleaseNode(path)
 	
 	// Parse the peer address
 	fmt.Fprintf(os.Stderr, "DEBUG: Parsing peer address\n")

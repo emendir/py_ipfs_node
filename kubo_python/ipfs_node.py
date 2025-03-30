@@ -328,6 +328,10 @@ class IPFSNode:
         # Node ID function signature
         self._lib.GetNodeID.argtypes = [ctypes.c_char_p]
         self._lib.GetNodeID.restype = ctypes.c_char_p
+        
+        # Node cleanup function signature
+        self._lib.CleanupNode.argtypes = [ctypes.c_char_p]
+        self._lib.CleanupNode.restype = ctypes.c_int
     
     def _init_repo(self):
         """Initialize the IPFS repository."""
@@ -616,12 +620,19 @@ class IPFSNode:
                     
         self._subscriptions.clear()
         
+        # Force cleanup of the node in Go
+        if self._repo_path:
+            try:
+                repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+                self._lib.CleanupNode(repo_path)
+                print(f"Node for repo {self._repo_path} explicitly cleaned up")
+            except Exception as e:
+                print(f"Warning: Error cleaning up node: {e}")
+        
         # Clean up temporary directory if one was created
         if self._temp_dir is not None:
             self._temp_dir.cleanup()
             self._temp_dir = None
-        
-        # Additional cleanup if needed
     
     def __enter__(self):
         """Support for context manager protocol."""
