@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync"
 
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/kubo/config"
@@ -19,6 +20,20 @@ import (
 )
 
 var plugins *loader.PluginLoader
+
+// NodeInfo holds the active IPFS node and API instance
+type NodeInfo struct {
+	API  iface.CoreAPI
+	Node *core.IpfsNode
+	// We count references to know when to safely close a node
+	RefCount int
+}
+
+// Registry for active nodes, indexed by repo path
+var (
+	activeNodes      = make(map[string]*NodeInfo)
+	activeNodesMutex sync.Mutex
+)
 
 func init() {
 	// Load plugins
@@ -57,9 +72,59 @@ func CreateRepo(repoPath *C.char) C.int {
 	return C.int(1) // Success
 }
 
-// SpawnNode creates an IPFS node
-// Export the function so it can be used by other files
-func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
+// AcquireNode gets or creates an IPFS node, increasing its reference count
+func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
+	activeNodesMutex.Lock()
+	defer activeNodesMutex.Unlock()
+	
+	// Check if we already have an active node for this repo
+	if nodeInfo, exists := activeNodes[repoPath]; exists {
+		fmt.Fprintf(os.Stderr, "DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n", 
+			repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
+		nodeInfo.RefCount++
+		return nodeInfo.API, nodeInfo.Node, nil
+	}
+	
+	// Otherwise create a new node
+	fmt.Fprintf(os.Stderr, "DEBUG: Creating new node for repo %s\n", repoPath)
+	api, node, err := createNewNode(repoPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	
+	// Register the new node
+	activeNodes[repoPath] = &NodeInfo{
+		API:      api,
+		Node:     node,
+		RefCount: 1,
+	}
+	
+	return api, node, nil
+}
+
+// ReleaseNode decreases the reference count for a node, closing it if no references remain
+func ReleaseNode(repoPath string) {
+	activeNodesMutex.Lock()
+	defer activeNodesMutex.Unlock()
+	
+	nodeInfo, exists := activeNodes[repoPath]
+	if !exists {
+		fmt.Fprintf(os.Stderr, "DEBUG: Attempted to release non-existent node for repo %s\n", repoPath)
+		return
+	}
+	
+	nodeInfo.RefCount--
+	fmt.Fprintf(os.Stderr, "DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
+	
+	if nodeInfo.RefCount <= 0 {
+		fmt.Fprintf(os.Stderr, "DEBUG: Closing node for repo %s\n", repoPath)
+		nodeInfo.Node.Close()
+		delete(activeNodes, repoPath)
+	}
+}
+
+// createNewNode creates a new IPFS node (internal function)
+func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	fmt.Fprintf(os.Stderr, "DEBUG: Opening repo at %s\n", repoPath)
 	// Open the repo
 	repo, err := fsrepo.Open(repoPath)
@@ -132,6 +197,12 @@ func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 
 	fmt.Fprintf(os.Stderr, "DEBUG: Node and API created successfully\n")
 	return api, node, nil
+}
+
+// SpawnNode creates or reuses an IPFS node (backward compatible API)
+// This is the function other files will call
+func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
+	return AcquireNode(repoPath)
 }
 
 // PubSubEnable enables pubsub on an IPFS node configuration
@@ -226,12 +297,12 @@ func GetNodeID(repoPath *C.char) *C.char {
 	path := C.GoString(repoPath)
 	
 	// Spawn a node
-	api, node, err := spawnNode(path)
+	api, _, err := AcquireNode(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error spawning node: %s\n", err)
 		return C.CString("")
 	}
-	defer node.Close()
+	defer ReleaseNode(path)
 	
 	// Get the node ID
 	id, err := api.Key().Self(ctx)
@@ -241,4 +312,26 @@ func GetNodeID(repoPath *C.char) *C.char {
 	}
 	
 	return C.CString(id.ID().String())
+}
+
+// CleanupNode explicitly releases a node by path
+//export CleanupNode
+func CleanupNode(repoPath *C.char) C.int {
+	path := C.GoString(repoPath)
+	
+	activeNodesMutex.Lock()
+	defer activeNodesMutex.Unlock()
+	
+	nodeInfo, exists := activeNodes[path]
+	if !exists {
+		return C.int(-1) // Node doesn't exist
+	}
+	
+	// Force close regardless of reference count
+	fmt.Fprintf(os.Stderr, "DEBUG: Force closing node for repo %s (refcount was: %d)\n", 
+		path, nodeInfo.RefCount)
+	nodeInfo.Node.Close()
+	delete(activeNodes, path)
+	
+	return C.int(0)
 }

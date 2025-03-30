@@ -133,6 +133,9 @@ extern int PubSubEnable(char* repoPath);
 // GetNodeID gets the ID of the IPFS node
 extern char* GetNodeID(char* repoPath);
 
+// CleanupNode explicitly releases a node by path
+extern int CleanupNode(char* repoPath);
+
 #ifdef __cplusplus
 }
 #endif
