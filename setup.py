@@ -40,7 +40,7 @@ def compile_go_library():
     elif platform.system() == 'Darwin':
         lib_name = 'libkubo.dylib'
     else:
-        lib_name = 'libkubo.so'
+        lib_name = 'libkubo_linux_x86_64.so'
 
     # Get Kubo library source code if not already fetched
     try:

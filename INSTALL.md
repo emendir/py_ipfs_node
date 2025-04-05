@@ -55,7 +55,7 @@ pip install kubo-python
    
    # Build the shared library
    mkdir -p ../kubo_python/lib
-   go build -buildmode=c-shared -o ../kubo_python/lib/libkubo.so kubo_wrapper.go
+   go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so kubo_wrapper.go
    
    # Return to the main directory and install the Python package
    cd ..
@@ -96,7 +96,7 @@ pip install kubo-python
 5. **Force Rebuild**: If you need to force a rebuild of the Go library:
    ```bash
    # Remove the compiled library
-   rm -f kubo_python/lib/libkubo.*
+   rm -f kubo_python/lib/libkubo*
    
    # Reinstall
    pip install -e .
@@ -119,7 +119,7 @@ If you're experiencing issues, you can test the Go library compilation directly:
 ```bash
 cd go_src
 export CGO_ENABLED=1
-go build -buildmode=c-shared -o ../kubo_python/lib/libkubo.so kubo_wrapper.go
+go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so kubo_wrapper.go
 ```
 
 This should produce a shared library in the kubo_python/lib directory. If this step succeeds but the Python package still fails, the issue is likely with the Python wrapper.
