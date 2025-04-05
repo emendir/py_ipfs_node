@@ -279,7 +279,10 @@ class IPFSNode:
         elif platform.system() == 'Darwin':
             lib_name = 'libkubo.dylib'
         else:
-            lib_name = 'libkubo.so'
+            if "aarch64" == platform.machine():
+                lib_name = "libkubo_android_arm64.so"
+            else:
+                lib_name = 'libkubo_linux_x86_64.so'
         
         # Get the absolute path to the library
         lib_path = Path(__file__).parent / 'lib' / lib_name
