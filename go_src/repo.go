@@ -7,16 +7,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"sync"
-
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/kubo/config"
 	"github.com/ipfs/kubo/core"
 	"github.com/ipfs/kubo/core/coreapi"
-	"github.com/ipfs/kubo/core/node/libp2p"
+	nodep2p "github.com/ipfs/kubo/core/node/libp2p"
 	"github.com/ipfs/kubo/plugin/loader"
 	"github.com/ipfs/kubo/repo/fsrepo"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"os"
+	"runtime"
+	"sync"
 )
 
 var plugins *loader.PluginLoader
@@ -40,38 +41,40 @@ func init() {
 	plugins, _ = loader.NewPluginLoader("")
 	plugins.Initialize()
 	plugins.Inject()
-	
+
 	// Initialize the shared function reference for other files
 	spawnNodeFunc = AcquireNode
 }
 
 // CreateRepo initializes a new IPFS repository
+//
 //export CreateRepo
 func CreateRepo(repoPath *C.char) C.int {
 	path := C.GoString(repoPath)
-	
+
 	// Check if repo already exists
 	if fsrepo.IsInitialized(path) {
 		return C.int(0) // Already initialized
 	}
-	
+
 	// Create and initialize a new config with default settings
 	cfg, err := config.Init(os.Stdin, 2048)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing IPFS config: %s\n", err)
 		return C.int(-1)
 	}
-	
+
 	// Set default bootstrap nodes
 	cfg.Bootstrap = config.DefaultBootstrapAddresses
-	
+	cfg.Swarm.ResourceMgr.Enabled=config.False
+
 	// Initialize the repo
 	err = fsrepo.Init(path, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing IPFS repo: %s\n", err)
 		return C.int(-2)
 	}
-	
+	AcquireNode(path)
 	return C.int(1) // Success
 }
 
@@ -79,29 +82,29 @@ func CreateRepo(repoPath *C.char) C.int {
 func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	activeNodesMutex.Lock()
 	defer activeNodesMutex.Unlock()
-	
+
 	// Check if we already have an active node for this repo
 	if nodeInfo, exists := activeNodes[repoPath]; exists {
-		fmt.Fprintf(os.Stderr, "DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n", 
+		fmt.Fprintf(os.Stderr, "DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
 			repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
 		nodeInfo.RefCount++
 		return nodeInfo.API, nodeInfo.Node, nil
 	}
-	
+
 	// Otherwise create a new node
 	fmt.Fprintf(os.Stderr, "DEBUG: Creating new node for repo %s\n", repoPath)
 	api, node, err := createNewNode(repoPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// Register the new node
 	activeNodes[repoPath] = &NodeInfo{
 		API:      api,
 		Node:     node,
 		RefCount: 1,
 	}
-	
+
 	return api, node, nil
 }
 
@@ -116,20 +119,21 @@ func RunNode(repoPath *C.char) C.int {
 	}
 	return C.int(1) // Success
 }
+
 // ReleaseNode decreases the reference count for a node, closing it if no references remain
 func ReleaseNode(repoPath string) {
 	activeNodesMutex.Lock()
 	defer activeNodesMutex.Unlock()
-	
+
 	nodeInfo, exists := activeNodes[repoPath]
 	if !exists {
 		fmt.Fprintf(os.Stderr, "DEBUG: Attempted to release non-existent node for repo %s\n", repoPath)
 		return
 	}
-	
+
 	nodeInfo.RefCount--
 	fmt.Fprintf(os.Stderr, "DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
-	
+
 	if nodeInfo.RefCount <= 0 {
 		fmt.Fprintf(os.Stderr, "DEBUG: Closing node for repo %s\n", repoPath)
 		nodeInfo.Node.Close()
@@ -171,7 +175,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 			}
 		}
 	}
-    
+
 	// Update the repo config with pubsub enabled
 	err = repo.SetConfig(cfg)
 	if err != nil {
@@ -179,16 +183,37 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		// Continue anyway
 	}
 
-	// Construct the node with experimental features enabled
-	nodeOptions := &core.BuildCfg{
-		Online:  true,
-		Routing: libp2p.DHTOption, // This is the default routing mode
-		Repo:    repo,
-		ExtraOpts: map[string]bool{
-			"pubsub": true,
-			"ipnsps": true,
-			"mplex":  true,
-		},
+	// Create a custom build configuration based on platform
+	var nodeOptions *core.BuildCfg
+	
+	if os.Getenv("ANDROID_ROOT") != "" || runtime.GOOS == "android" {
+		fmt.Fprintf(os.Stderr, "DEBUG: Detected Android environment, using Android-specific configuration\n")
+		
+		// Android-specific configuration that avoids using resource manager
+		nodeOptions = &core.BuildCfg{
+			Online:  true,
+			Routing: nodep2p.DHTOption,
+			Repo:    repo,
+			ExtraOpts: map[string]bool{
+				"pubsub": true,
+				"ipnsps": true,
+				"mplex":  true,
+				"disableResourceManager": true,
+				"DisableResourceManager": true,
+			},
+		}
+	} else {
+		// Regular configuration for desktop
+		nodeOptions = &core.BuildCfg{
+			Online:  true,
+			Routing: nodep2p.DHTOption, 
+			Repo:    repo,
+			ExtraOpts: map[string]bool{
+				"pubsub": true,
+				"ipnsps": true,
+				"mplex":  true,
+			},
+		}
 	}
 
 	fmt.Fprintf(os.Stderr, "DEBUG: Creating new IPFS node with pubsub enabled\n")
@@ -209,6 +234,21 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		return nil, nil, err
 	}
 
+	peerInfo, err := peer.AddrInfoFromString("/ip4/192.168.189.106/udp/4001/quic-v1/p2p/12D3KooWCq7RiBeLTZFeBRX4zmfYDunHPmgT3zZSdQKcx7Es34py")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing peer address: %s\n", err)
+
+	} else {
+
+		// Connect to the peer
+		fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer\n")
+		err = api.Swarm().Connect(ctx, *peerInfo)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error connecting to peer: %s\n", err)
+
+		}
+	}
+
 	fmt.Fprintf(os.Stderr, "DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
@@ -220,6 +260,7 @@ func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 }
 
 // PubSubEnable enables pubsub on an IPFS node configuration
+//
 //export PubSubEnable
 func PubSubEnable(repoPath *C.char) C.int {
 	path := C.GoString(repoPath)
@@ -248,10 +289,10 @@ func PubSubEnable(repoPath *C.char) C.int {
 	// Enable experimental features
 	cfg.Experimental.Libp2pStreamMounting = true
 	cfg.Experimental.P2pHttpProxy = true
-	
+
 	// IPFS API doesn't expose Pubsub setting in the new structure
 	// Directly modify the raw config
-	
+
 	// Convert cfg to plain config map
 	cfgMap := map[string]interface{}{}
 	cfgRaw, err := json.Marshal(cfg)
@@ -259,13 +300,13 @@ func PubSubEnable(repoPath *C.char) C.int {
 		fmt.Fprintf(os.Stderr, "Error marshaling config: %s\n", err)
 		return C.int(-5)
 	}
-	
+
 	err = json.Unmarshal(cfgRaw, &cfgMap)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error unmarshaling config map: %s\n", err)
 		return C.int(-6)
 	}
-	
+
 	// Ensure the Pubsub field is set in Experimental section
 	if expMap, ok := cfgMap["Experimental"].(map[string]interface{}); ok {
 		expMap["Pubsub"] = true
@@ -324,35 +365,36 @@ func GetNodeID(repoPath *C.char) *C.char {
 		return C.CString("")
 	}
 	defer ReleaseNode(path)
-	
+
 	// Get the node ID
 	id, err := api.Key().Self(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting node ID: %s\n", err)
 		return C.CString("")
 	}
-	
+
 	return C.CString(id.ID().String())
 }
 
 // CleanupNode explicitly releases a node by path
+//
 //export CleanupNode
 func CleanupNode(repoPath *C.char) C.int {
 	path := C.GoString(repoPath)
-	
+
 	activeNodesMutex.Lock()
 	defer activeNodesMutex.Unlock()
-	
+
 	nodeInfo, exists := activeNodes[path]
 	if !exists {
 		return C.int(-1) // Node doesn't exist
 	}
-	
+
 	// Force close regardless of reference count
-	fmt.Fprintf(os.Stderr, "DEBUG: Force closing node for repo %s (refcount was: %d)\n", 
+	fmt.Fprintf(os.Stderr, "DEBUG: Force closing node for repo %s (refcount was: %d)\n",
 		path, nodeInfo.RefCount)
 	nodeInfo.Node.Close()
 	delete(activeNodes, path)
-	
+
 	return C.int(0)
 }
