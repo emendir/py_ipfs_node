@@ -24,6 +24,11 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 
 #line 1 "cgo-generated-wrapper"
 
+#line 3 "p2p.go"
+ #include <stdlib.h>
+
+#line 1 "cgo-generated-wrapper"
+
 #line 3 "peers.go"
  #include <stdlib.h>
 
@@ -102,6 +107,26 @@ extern void FreeString(char* str);
 
 // GetFile retrieves a file from IPFS
 extern int GetFile(char* repoPath, char* cidStr, char* destPath);
+
+// P2PForward creates a libp2p stream mounting forwarding connection
+//
+extern int P2PForward(char* repoPath, char* protocol, char* listenAddr, char* targetPeerID);
+
+// P2PListen creates a libp2p service that listens for connections on the given protocol
+//
+extern int P2PListen(char* repoPath, char* protocol, char* targetAddr);
+
+// P2PClose closes p2p listener or stream
+//
+extern int P2PClose(char* repoPath, char* protocol, char* listenAddr, char* targetPeerID);
+
+// P2PListListeners lists active p2p listeners
+//
+extern char* P2PListListeners(char* repoPath);
+
+// P2PEnable ensures p2p functionality is enabled in the config
+//
+extern int P2PEnable(char* repoPath);
 
 // ConnectToPeer connects to a peer
 extern int ConnectToPeer(char* repoPath, char* peerAddr);

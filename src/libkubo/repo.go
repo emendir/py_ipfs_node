@@ -14,11 +14,12 @@ import (
 	"github.com/ipfs/kubo/plugin/loader"
 	"github.com/ipfs/kubo/repo/fsrepo"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"log"
 	"os"
 	"runtime"
 	"sync"
-	"log"
 )
+
 func init() {
 	f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err == nil {
@@ -30,6 +31,7 @@ func init() {
 		log.Printf("Failed to open log file: %v", err)
 	}
 }
+
 var plugins *loader.PluginLoader
 
 // NodeInfo holds the active IPFS node and API instance
@@ -70,18 +72,21 @@ func CreateRepo(repoPath *C.char) C.int {
 	// Create and initialize a new config with default settings
 	cfg, err := config.Init(os.Stdin, 2048)
 	if err != nil {
-		log.Printf( "Error initializing IPFS config: %s\n", err)
+		log.Printf("Error initializing IPFS config: %s\n", err)
 		return C.int(-1)
 	}
 
 	// Set default bootstrap nodes
 	cfg.Bootstrap = config.DefaultBootstrapAddresses
-	cfg.Swarm.ResourceMgr.Enabled=config.False
+	if os.Getenv("ANDROID_ROOT") != "" || runtime.GOOS == "android" {
+		log.Printf("DEBUG: Detected Android environment, using Android-specific configuration\n")
+		cfg.Swarm.ResourceMgr.Enabled = config.False
+	}
 
 	// Initialize the repo
 	err = fsrepo.Init(path, cfg)
 	if err != nil {
-		log.Printf( "Error initializing IPFS repo: %s\n", err)
+		log.Printf("Error initializing IPFS repo: %s\n", err)
 		return C.int(-2)
 	}
 	AcquireNode(path)
@@ -96,14 +101,14 @@ func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 
 	// Check if we already have an active node for this repo
 	if nodeInfo, exists := activeNodes[repoPath]; exists {
-		log.Printf( "DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
+		log.Printf("DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
 			repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
 		nodeInfo.RefCount++
 		return nodeInfo.API, nodeInfo.Node, nil
 	}
 
 	// Otherwise create a new node
-	log.Printf( "DEBUG: Creating new node for repo %s\n", repoPath)
+	log.Printf("DEBUG: Creating new node for repo %s\n", repoPath)
 	api, node, err := createNewNode(repoPath)
 	if err != nil {
 		return nil, nil, err
@@ -125,7 +130,7 @@ func RunNode(repoPath *C.char) C.int {
 	// Spawn a node
 	_, _, err := AcquireNode(path)
 	if err != nil {
-		log.Printf( "Error spawning node: %s\n", err)
+		log.Printf("Error spawning node: %s\n", err)
 		return C.int(0)
 	}
 	return C.int(1) // Success
@@ -138,15 +143,15 @@ func ReleaseNode(repoPath string) {
 
 	nodeInfo, exists := activeNodes[repoPath]
 	if !exists {
-		log.Printf( "DEBUG: Attempted to release non-existent node for repo %s\n", repoPath)
+		log.Printf("DEBUG: Attempted to release non-existent node for repo %s\n", repoPath)
 		return
 	}
 
 	nodeInfo.RefCount--
-	log.Printf( "DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
+	log.Printf("DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
 
 	if nodeInfo.RefCount <= 0 {
-		log.Printf( "DEBUG: Closing node for repo %s\n", repoPath)
+		log.Printf("DEBUG: Closing node for repo %s\n", repoPath)
 		nodeInfo.Node.Close()
 		delete(activeNodes, repoPath)
 	}
@@ -154,18 +159,18 @@ func ReleaseNode(repoPath string) {
 
 // createNewNode creates a new IPFS node (internal function)
 func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
-	log.Printf( "DEBUG: Opening repo at %s\n", repoPath)
+	log.Printf("DEBUG: Opening repo at %s\n", repoPath)
 	// Open the repo
 	repo, err := fsrepo.Open(repoPath)
 	if err != nil {
-		log.Printf( "DEBUG: Error opening repo: %v\n", err)
+		log.Printf("DEBUG: Error opening repo: %v\n", err)
 		return nil, nil, err
 	}
 
 	// Get the config to check if pubsub is enabled
 	cfg, err := repo.Config()
 	if err != nil {
-		log.Printf( "DEBUG: Error getting repo config: %v\n", err)
+		log.Printf("DEBUG: Error getting repo config: %v\n", err)
 		repo.Close()
 		return nil, nil, err
 	}
@@ -182,7 +187,9 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 			if expMap, ok := cfgMap["Experimental"].(map[string]interface{}); ok {
 				// Set pubsub enabled
 				expMap["Pubsub"] = true
-				log.Printf( "DEBUG: Setting pubsub enabled in config\n")
+				expMap["Libp2pStreamMounting"] = true
+				expMap["P2pHttpProxy"] = true
+				log.Printf("DEBUG: Setting experimental features in config\n")
 			}
 		}
 	}
@@ -190,25 +197,27 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	// Update the repo config with pubsub enabled
 	err = repo.SetConfig(cfg)
 	if err != nil {
-		log.Printf( "DEBUG: Warning - could not update repo config: %v\n", err)
+		log.Printf("DEBUG: Warning - could not update repo config: %v\n", err)
 		// Continue anyway
 	}
 
 	// Create a custom build configuration based on platform
 	var nodeOptions *core.BuildCfg
-	
+
 	if os.Getenv("ANDROID_ROOT") != "" || runtime.GOOS == "android" {
-		log.Printf( "DEBUG: Detected Android environment, using Android-specific configuration\n")
-		
+		log.Printf("DEBUG: Detected Android environment, using Android-specific configuration\n")
+
 		// Android-specific configuration that avoids using resource manager
 		nodeOptions = &core.BuildCfg{
 			Online:  true,
 			Routing: nodep2p.DHTOption,
 			Repo:    repo,
 			ExtraOpts: map[string]bool{
-				"pubsub": true,
-				"ipnsps": true,
-				"mplex":  true,
+				"pubsub":                 true,
+				"ipnsps":                 true,
+				"mplex":                  true,
+				"libp2p-stream-mounting": true,
+				"p2p-http-proxy":         true,
 				"disableResourceManager": true,
 				"DisableResourceManager": true,
 			},
@@ -217,50 +226,52 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		// Regular configuration for desktop
 		nodeOptions = &core.BuildCfg{
 			Online:  true,
-			Routing: nodep2p.DHTOption, 
+			Routing: nodep2p.DHTOption,
 			Repo:    repo,
 			ExtraOpts: map[string]bool{
-				"pubsub": true,
-				"ipnsps": true,
-				"mplex":  true,
+				"pubsub":                 true,
+				"ipnsps":                 true,
+				"mplex":                  true,
+				"libp2p-stream-mounting": true,
+				"p2p-http-proxy":         true,
 			},
 		}
 	}
 
-	log.Printf( "DEBUG: Creating new IPFS node with pubsub enabled\n")
+	log.Printf("DEBUG: Creating new IPFS node with pubsub and p2p streaming enabled\n")
 	ctx := context.Background()
 	node, err := core.NewNode(ctx, nodeOptions)
 	if err != nil {
-		log.Printf( "DEBUG: Error creating node: %v\n", err)
+		log.Printf("DEBUG: Error creating node: %v\n", err)
 		repo.Close()
 		return nil, nil, err
 	}
 
 	// Construct the API
-	log.Printf( "DEBUG: Creating CoreAPI\n")
+	log.Printf("DEBUG: Creating CoreAPI\n")
 	api, err := coreapi.NewCoreAPI(node)
 	if err != nil {
-		log.Printf( "DEBUG: Error creating API: %v\n", err)
+		log.Printf("DEBUG: Error creating API: %v\n", err)
 		node.Close()
 		return nil, nil, err
 	}
 
 	peerInfo, err := peer.AddrInfoFromString("/ip4/192.168.189.106/udp/4001/quic-v1/p2p/12D3KooWCq7RiBeLTZFeBRX4zmfYDunHPmgT3zZSdQKcx7Es34py")
 	if err != nil {
-		log.Printf( "Error parsing peer address: %s\n", err)
+		log.Printf("Error parsing peer address: %s\n", err)
 
 	} else {
 
 		// Connect to the peer
-		log.Printf( "DEBUG: Connecting to peer\n")
+		log.Printf("DEBUG: Connecting to peer\n")
 		err = api.Swarm().Connect(ctx, *peerInfo)
 		if err != nil {
-			log.Printf( "Error connecting to peer: %s\n", err)
+			log.Printf("Error connecting to peer: %s\n", err)
 
 		}
 	}
 
-	log.Printf( "DEBUG: Node and API created successfully\n")
+	log.Printf("DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
 
@@ -278,14 +289,14 @@ func PubSubEnable(repoPath *C.char) C.int {
 
 	// Ensure repo exists
 	if !fsrepo.IsInitialized(path) {
-		log.Printf( "Error: Repository not initialized at %s\n", path)
+		log.Printf("Error: Repository not initialized at %s\n", path)
 		return C.int(-1)
 	}
 
 	// Open the repo config
 	repo, err := fsrepo.Open(path)
 	if err != nil {
-		log.Printf( "Error opening repository: %s\n", err)
+		log.Printf("Error opening repository: %s\n", err)
 		return C.int(-2)
 	}
 	defer repo.Close()
@@ -293,7 +304,7 @@ func PubSubEnable(repoPath *C.char) C.int {
 	// Get the config
 	cfg, err := repo.Config()
 	if err != nil {
-		log.Printf( "Error getting repository config: %s\n", err)
+		log.Printf("Error getting repository config: %s\n", err)
 		return C.int(-3)
 	}
 
@@ -308,49 +319,53 @@ func PubSubEnable(repoPath *C.char) C.int {
 	cfgMap := map[string]interface{}{}
 	cfgRaw, err := json.Marshal(cfg)
 	if err != nil {
-		log.Printf( "Error marshaling config: %s\n", err)
+		log.Printf("Error marshaling config: %s\n", err)
 		return C.int(-5)
 	}
 
 	err = json.Unmarshal(cfgRaw, &cfgMap)
 	if err != nil {
-		log.Printf( "Error unmarshaling config map: %s\n", err)
+		log.Printf("Error unmarshaling config map: %s\n", err)
 		return C.int(-6)
 	}
 
 	// Ensure the Pubsub field is set in Experimental section
 	if expMap, ok := cfgMap["Experimental"].(map[string]interface{}); ok {
 		expMap["Pubsub"] = true
-		log.Printf( "DEBUG: Enabled Pubsub in Experimental map\n")
+		expMap["Libp2pStreamMounting"] = true
+		expMap["P2pHttpProxy"] = true
+		log.Printf("DEBUG: Enabled experimental features in Experimental map\n")
 	} else {
 		// Create Experimental map if it doesn't exist
 		cfgMap["Experimental"] = map[string]interface{}{
 			"Pubsub": true,
+			"Libp2pStreamMounting": true,
+			"P2pHttpProxy": true,
 		}
-		log.Printf( "DEBUG: Created new Experimental map with Pubsub enabled\n")
+		log.Printf("DEBUG: Created new Experimental map with experimental features enabled\n")
 	}
 
 	// Marshal back to JSON
 	cfgRaw, err = json.Marshal(cfgMap)
 	if err != nil {
-		log.Printf( "Error marshaling modified config: %s\n", err)
+		log.Printf("Error marshaling modified config: %s\n", err)
 		return C.int(-7)
 	}
 
 	// Create a new config to override the existing one
 	var newCfg config.Config
 	if err := json.Unmarshal(cfgRaw, &newCfg); err != nil {
-		log.Printf( "Error unmarshaling to config: %s\n", err)
+		log.Printf("Error unmarshaling to config: %s\n", err)
 		return C.int(-8)
 	}
 
 	// Set the updated config
 	if err := repo.SetConfig(&newCfg); err != nil {
-		log.Printf( "Error setting updated config: %s\n", err)
+		log.Printf("Error setting updated config: %s\n", err)
 		return C.int(-9)
 	}
 
-	log.Printf( "DEBUG: Updated config successfully\n")
+	log.Printf("DEBUG: Updated config successfully\n")
 
 	return C.int(0)
 }
@@ -366,7 +381,6 @@ func TestGetString() *C.char {
 //export GetNodeID
 func GetNodeID(repoPath *C.char) *C.char {
 
-
 	ctx := context.Background()
 
 	path := C.GoString(repoPath)
@@ -374,9 +388,9 @@ func GetNodeID(repoPath *C.char) *C.char {
 	// Spawn a node
 	api, _, err := AcquireNode(path)
 	if err != nil {
-		log.Printf( "Error spawning node: %s\n", err)
+		log.Printf("Error spawning node: %s\n", err)
 		log.Println("Error spawning node:")
-		
+
 		return C.CString("")
 	}
 	defer ReleaseNode(path)
@@ -384,7 +398,7 @@ func GetNodeID(repoPath *C.char) *C.char {
 	// Get the node ID
 	id, err := api.Key().Self(ctx)
 	if err != nil {
-		log.Printf( "Error getting node ID: %s\n", err)
+		log.Printf("Error getting node ID: %s\n", err)
 		log.Println("Error  getting node ID:")
 		return C.CString("")
 	}
@@ -409,7 +423,7 @@ func CleanupNode(repoPath *C.char) C.int {
 	}
 
 	// Force close regardless of reference count
-	log.Printf( "DEBUG: Force closing node for repo %s (refcount was: %d)\n",
+	log.Printf("DEBUG: Force closing node for repo %s (refcount was: %d)\n",
 		path, nodeInfo.RefCount)
 	nodeInfo.Node.Close()
 	delete(activeNodes, path)
