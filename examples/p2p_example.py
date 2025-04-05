@@ -14,12 +14,13 @@ import os
 import sys
 import time
 import argparse
+import json
 from pathlib import Path
 
 # Add the parent directory to the Python path so we can import the library
 sys.path.append(str(Path(__file__).parent.parent))
 
-from kubo_python import IPFSNode
+from src.kubo_python import IPFSNode, IPFSP2P
 
 def main():
     parser = argparse.ArgumentParser(description="Demo of libp2p stream mounting")
@@ -55,13 +56,16 @@ def main():
     print("Starting IPFS node...")
     node = IPFSNode.ephemeral()
     
+    # Create P2P interface
+    p2p = IPFSP2P(node)
+    
     try:
         print(f"Node peer ID: {node.peer_id}")
         
         if args.listen:
             # Create a TCP listening connection
             print(f"Creating a TCP listening connection on protocol '{args.protocol}' and port {args.port}")
-            result = node.create_tcp_listening_connection(args.protocol, args.port)
+            result = p2p.listen(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}")
             if result:
                 print("✓ Listening connection created successfully")
             else:
@@ -69,8 +73,15 @@ def main():
                 sys.exit(1)
                 
             # List active connections
-            connections = node.list_tcp_connections()
-            print(f"Active connections: \n{connections}")
+            listeners, streams = p2p.list_listeners()
+            print(f"Active listeners ({len(listeners)}):")
+            for i, listener in enumerate(listeners):
+                print(f"  {i+1}. Protocol: {listener.protocol}, Target: {listener.target_address}")
+                
+            if streams:
+                print(f"Active streams ({len(streams)}):")
+                for i, stream in enumerate(streams):
+                    print(f"  {i+1}. Protocol: {stream.protocol}, Origin: {stream.origin_address}, Target: {stream.target_address}")
             
             # Keep the program running
             print("Press Ctrl+C to stop...")
@@ -84,7 +95,7 @@ def main():
             # Create a TCP forwarding connection
             print(f"Creating a TCP forwarding connection to peer {args.peer_id}")
             print(f"Protocol: {args.protocol}, Local port: {args.port}")
-            result = node.create_tcp_forwarding_connection(args.protocol, args.port, args.peer_id)
+            result = p2p.forward(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}", f"{args.peer_id}")
             if result:
                 print("✓ Forwarding connection created successfully")
             else:
@@ -92,8 +103,15 @@ def main():
                 sys.exit(1)
                 
             # List active connections
-            connections = node.list_tcp_connections()
-            print(f"Active connections: \n{connections}")
+            listeners, streams = p2p.list_listeners()
+            print(f"Active listeners ({len(listeners)}):")
+            for i, listener in enumerate(listeners):
+                print(f"  {i+1}. Protocol: {listener.protocol}, Target: {listener.target_address}")
+                
+            if streams:
+                print(f"Active streams ({len(streams)}):")
+                for i, stream in enumerate(streams):
+                    print(f"  {i+1}. Protocol: {stream.protocol}, Origin: {stream.origin_address}, Target: {stream.target_address}")
             
             # Keep the program running
             print("Press Ctrl+C to stop...")
@@ -105,10 +123,9 @@ def main():
     
     finally:
         # Clean up
-        if args.listen:
-            node.close_all_tcp_listening_connections()
-        elif args.forward:
-            node.close_all_tcp_forwarding_connections()
+        if args.listen or args.forward:
+            p2p.close(args.protocol)
+            print(f"Closed P2P connection for protocol: {args.protocol}")
         
         # Close the IPFS node
         node.close()
