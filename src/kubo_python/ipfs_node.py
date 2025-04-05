@@ -760,34 +760,29 @@ class IPFSNode:
         """
         return self.close_tcp_connection()
         
-    def list_tcp_connections(self) -> str:
+    def list_tcp_connections(self) -> Dict[str, List[Dict[str, str]]]:
         """
         List all active TCP p2p connections.
         
         Returns:
-            str: Text output of active p2p connections
+            Dict[str, List[Dict[str, str]]]: Dictionary containing lists of local listeners and remote streams
         """
-        # Define function signature if not already defined
-        if not hasattr(self._lib, 'P2PListListeners'):
-            self._lib.P2PListListeners.argtypes = [ctypes.c_char_p]
-            self._lib.P2PListListeners.restype = ctypes.c_char_p
+        # Import IPFSP2P lazily to avoid circular import
+        from .ipfs_p2p import IPFSP2P
         
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        # Get the P2P interface
+        p2p = IPFSP2P(self)
         
-        output_ptr = self._lib.P2PListListeners(repo_path)
-        if not output_ptr:
-            return ""
+        # Get the listeners and streams
+        listeners, streams = p2p.list_listeners()
         
-        # Copy the string content before freeing the pointer
-        output = ctypes.string_at(output_ptr).decode('utf-8')
+        # Convert to dictionary format
+        result = {
+            "LocalListeners": [listener.__dict__ for listener in listeners],
+            "RemoteStreams": [stream.__dict__ for stream in streams]
+        }
         
-        try:
-            # Free the memory allocated in Go
-            self._lib.FreeString(output_ptr)
-        except Exception as e:
-            print(f"Warning: Failed to free memory: {e}")
-        
-        return output
+        return result
         
     def _enable_p2p(self) -> bool:
         """Enable p2p functionality in the IPFS configuration."""

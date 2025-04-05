@@ -110,15 +110,15 @@ extern int GetFile(char* repoPath, char* cidStr, char* destPath);
 
 // P2PForward creates a libp2p stream mounting forwarding connection
 //
-extern int P2PForward(char* repoPath, char* protocol, char* listenAddr, char* targetPeerID);
+extern int P2PForward(char* repoPath, char* proto, char* listenAddr, char* targetPeerID);
 
 // P2PListen creates a libp2p service that listens for connections on the given protocol
 //
-extern int P2PListen(char* repoPath, char* protocol, char* targetAddr);
+extern int P2PListen(char* repoPath, char* proto, char* targetAddr);
 
 // P2PClose closes p2p listener or stream
 //
-extern int P2PClose(char* repoPath, char* protocol, char* listenAddr, char* targetPeerID);
+extern int P2PClose(char* repoPath, char* proto, char* listenAddr, char* targetPeerID);
 
 // P2PListListeners lists active p2p listeners
 //

@@ -7,6 +7,7 @@ require (
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/kubo v0.22.0
 	github.com/libp2p/go-libp2p v0.29.2
+	github.com/multiformats/go-multiaddr v0.10.1
 )
 
 require (
@@ -123,7 +124,6 @@ require (
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
-	github.com/multiformats/go-multiaddr v0.10.1 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
 	github.com/multiformats/go-multiaddr-fmt v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.2.0 // indirect

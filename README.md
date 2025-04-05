@@ -11,6 +11,7 @@ This library provides Python bindings for [Kubo](https://github.com/ipfs/kubo), 
 - Connect to the IPFS network
 - Manage IPFS repositories
 - Publish and subscribe to IPFS PubSub topics
+- Mount and connect to remote TCP services via libp2p
 
 ## Installation
 
@@ -64,10 +65,33 @@ with IPFSNode.ephemeral() as node:
         subscription.subscribe(on_message)
 ```
 
+### Using P2P Stream Mounting
+
+```python
+from kubo_python import IPFSNode, IPFSP2P
+
+# Create an IPFS node
+with IPFSNode.ephemeral() as node:
+    p2p = IPFSP2P(node)
+    
+    # Example 1: Listen for connections on a protocol and forward them to a local service
+    p2p.listen("my-service", "127.0.0.1:8080")
+    
+    # Example 2: Forward local connections to a remote peer
+    p2p.forward("their-service", "127.0.0.1:9090", "QmPeerID...")
+    
+    # List active listeners and streams
+    listeners, streams = p2p.list_listeners()
+    
+    # Close specific connections when done
+    p2p.close("my-service")
+```
+
 ## Documentation
 
 - [Installation Instructions](INSTALL.md)
 - [PubSub Documentation](docs/pubsub.md)
+- [P2P Stream Mounting](docs/p2p.md)
 
 ## Examples
 
@@ -75,6 +99,8 @@ with IPFSNode.ephemeral() as node:
 - [File Sharing](examples/file_sharing.py)
 - [PubSub Example](examples/pubsub_example.py)
 - [Chat Application](examples/chat_app.py)
+- [P2P Stream Mounting](examples/p2p_example.py)
+- [P2P Socket Communication](examples/p2p_socket_example.py)
 
 ## License
 
