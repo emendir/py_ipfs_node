@@ -4,7 +4,7 @@
 
 Before installing the Kubo Python library, ensure you have the following prerequisites:
 
-1. **Go**: Version 1.19 or later is required to compile the Go IPFS bindings.
+1. **Go**: Version 1.19 is required to compile the Go IPFS bindings.
    - Install from [golang.org](https://golang.org/doc/install)
    - Verify with `go version`
 
@@ -44,63 +44,14 @@ pip install kubo-python
 
 3. If installation fails because of Go compilation errors, you can manually build the Go library:
    ```bash
-   # Ensure CGO is enabled
-   export CGO_ENABLED=1
+   rm -f src/kubo_python/lib/libkubo* # OPTIONAL: Remove the compiled library
    
-   # Navigate to the libkubo directory
-   cd libkubo
-   
-   # Initialize the Go module and get dependencies
-   go mod tidy
-   
-   # Build the shared library
-   mkdir -p ../kubo_python/lib
-   go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
-   
-   # Return to the main directory and install the Python package
-   cd ..
+   ./src/libkubo/compile_linux.sh  # Linux
+   ./src/libkubo/compile_android.sh  # Android
    pip install -e .
    ```
 
-## Troubleshooting
 
-### Common Issues
-
-1. **Missing Go**: If you get an error about Go not being found, ensure it's installed and in your PATH.
-
-2. **CGO_ENABLED**: The build requires CGO to be enabled. If you're having trouble, try:
-   ```bash
-   export CGO_ENABLED=1
-   pip install -e .
-   ```
-
-3. **Library Load Errors**: If you get errors about the shared library not being found:
-   - On Linux: Set `LD_LIBRARY_PATH` to include the library directory
-     ```bash
-     export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/kubo_python/lib
-     ```
-   - On macOS: Set `DYLD_LIBRARY_PATH` to include the library directory
-     ```bash
-     export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$(pwd)/kubo_python/lib
-     ```
-   - On Windows: Add the library directory to your PATH
-
-4. **Go Module Errors**: If you encounter errors related to Go modules:
-   ```bash
-   cd libkubo
-   go mod tidy
-   cd ..
-   pip install -e .
-   ```
-
-5. **Force Rebuild**: If you need to force a rebuild of the Go library:
-   ```bash
-   # Remove the compiled library
-   rm -f kubo_python/lib/libkubo*
-   
-   # Reinstall
-   pip install -e .
-   ```
 
 ## Verifying Installation
 
@@ -110,16 +61,3 @@ Run the example script to verify your installation:
 python examples/basic_usage.py
 ```
 
-If the script runs successfully and connects to the IPFS network, your installation is working correctly.
-
-## Manual Testing
-
-If you're experiencing issues, you can test the Go library compilation directly:
-
-```bash
-cd libkubo
-export CGO_ENABLED=1
-go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
-```
-
-This should produce a shared library in the kubo_python/lib directory. If this step succeeds but the Python package still fails, the issue is likely with the Python wrapper.
