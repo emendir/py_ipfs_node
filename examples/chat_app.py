@@ -46,8 +46,8 @@ class ChatApp:
             self.username = username
             
         # Create IPFS node
-        self.node = IPFSNode(repo_path, enable_pubsub=True)
-        
+        self.node = IPFSNode(None, enable_pubsub=True)
+        print(f"IPFS Peer ID: {self.node.peer_id}")
         # Dict to keep track of active room subscriptions
         self.rooms = {}
         
