@@ -132,10 +132,10 @@ extern int RunNode(char* repoPath);
 // PubSubEnable enables pubsub on an IPFS node configuration
 //
 extern int PubSubEnable(char* repoPath);
+extern char* TestGetString();
 
 // GetNodeID gets the ID of the IPFS node
 //
-extern char* TestGetString();
 extern char* GetNodeID(char* repoPath);
 
 // CleanupNode explicitly releases a node by path
