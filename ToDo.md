@@ -1,5 +1,5 @@
-## go_src
-- rename go_src
+## libkubo
+- rename libkubo
 - export ReleaseNode
 
 

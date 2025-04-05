@@ -13,8 +13,8 @@ def compile_go_library():
     print("Compiling Go shared library...")
 
     # Define Go source directory
-    go_src_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'go_src')
+    libkubo_dir = os.path.join(os.path.dirname(
+        os.path.abspath(__file__)), 'libkubo')
 
     # Check if Go is installed
     try:
@@ -25,8 +25,8 @@ def compile_go_library():
             "Go compiler not found. Please install Go 1.19 or later.")
 
     # Build shared library for the current platform
-    if not os.path.exists(go_src_dir):
-        os.makedirs(go_src_dir)
+    if not os.path.exists(libkubo_dir):
+        os.makedirs(libkubo_dir)
 
     # Create the lib directory if it doesn't exist
     lib_dir = os.path.join(os.path.dirname(
@@ -44,10 +44,10 @@ def compile_go_library():
 
     # Get Kubo library source code if not already fetched
     try:
-        if not os.path.exists(os.path.join(go_src_dir, 'go.sum')):
+        if not os.path.exists(os.path.join(libkubo_dir, 'go.sum')):
             subprocess.check_call([
                 'go', 'mod', 'tidy'
-            ], cwd=go_src_dir)
+            ], cwd=libkubo_dir)
     except subprocess.CalledProcessError as e:
         print(f"Error fetching Go dependencies: {e}")
         print("Continuing with existing code...")
@@ -57,16 +57,16 @@ def compile_go_library():
     if os.path.exists(output_path):
         print(f"Shared library already exists at {output_path}")
         return
-    print("Compiling go_src...")
+    print("Compiling libkubo...")
     # Build the shared library
     build_cmd = [
         'go', 'build', '-buildmode=c-shared',
         '-o', output_path,
-        go_src_dir
+        libkubo_dir
     ]
 
     print(f"Running: {' '.join(build_cmd)}")
-    subprocess.check_call(build_cmd, cwd=go_src_dir)
+    subprocess.check_call(build_cmd, cwd=libkubo_dir)
     print(f"Successfully compiled shared library: {output_path}")
 
 

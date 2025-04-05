@@ -1,8 +1,8 @@
 include README.md
 include LICENSE
 include INSTALL.md
-include go_src/go.mod
-include go_src/kubo_wrapper.go
+include libkubo/go.mod
+include libkubo/kubo_wrapper.go
 recursive-include kubo_python/lib *
 recursive-include examples *.py
 recursive-include tests *.py

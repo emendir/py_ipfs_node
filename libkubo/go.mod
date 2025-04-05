@@ -1,4 +1,4 @@
-module github.com/yourusername/kubo-python/go_src
+module github.com/yourusername/kubo-python/libkubo
 
 go 1.19
 
