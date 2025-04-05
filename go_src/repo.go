@@ -277,39 +277,46 @@ func PubSubEnable(repoPath *C.char) C.int {
 		}
 		fmt.Fprintf(os.Stderr, "DEBUG: Created new Experimental map with Pubsub enabled\n")
 	}
-	
+
 	// Marshal back to JSON
 	cfgRaw, err = json.Marshal(cfgMap)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling modified config: %s\n", err)
 		return C.int(-7)
 	}
-	
+
 	// Create a new config to override the existing one
 	var newCfg config.Config
 	if err := json.Unmarshal(cfgRaw, &newCfg); err != nil {
 		fmt.Fprintf(os.Stderr, "Error unmarshaling to config: %s\n", err)
 		return C.int(-8)
 	}
-	
+
 	// Set the updated config
 	if err := repo.SetConfig(&newCfg); err != nil {
 		fmt.Fprintf(os.Stderr, "Error setting updated config: %s\n", err)
 		return C.int(-9)
 	}
-	
+
 	fmt.Fprintf(os.Stderr, "DEBUG: Updated config successfully\n")
 
 	return C.int(0)
 }
 
 // GetNodeID gets the ID of the IPFS node
+//
+//export TestGetString
+func TestGetString() *C.char {
+	// Hard-coded test string to see if this works on Android
+	return C.CString("TEST_STRING_123")
+}
+
 //export GetNodeID
 func GetNodeID(repoPath *C.char) *C.char {
 	ctx := context.Background()
-	
+
 	path := C.GoString(repoPath)
-	
+
 	// Spawn a node
 	api, _, err := AcquireNode(path)
 	if err != nil {

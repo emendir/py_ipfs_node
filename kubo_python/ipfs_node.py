@@ -335,6 +335,10 @@ class IPFSNode:
         self._lib.PubSubPeers.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
         self._lib.PubSubPeers.restype = ctypes.c_char_p
         
+        # Test function
+        self._lib.TestGetString.argtypes = []
+        self._lib.TestGetString.restype = ctypes.c_char_p
+        
         # Node ID function signature
         self._lib.GetNodeID.argtypes = [ctypes.c_char_p]
         self._lib.GetNodeID.restype = ctypes.c_char_p
@@ -350,6 +354,8 @@ class IPFSNode:
         
         if result < 0:
             raise RuntimeError(f"Failed to initialize IPFS repository: {result}")
+        print(f"Initalised repo at: {repo_path}")
+        print(result)
     
     def add_file(self, file_path: str) -> str:
         """
@@ -805,6 +811,21 @@ class IPFSNode:
         except json.JSONDecodeError:
             return []
     
+    def test_get_string(self) -> str:
+        """Test function to check basic string passing from Go to Python"""
+        try:
+            id_ptr = self._lib.TestGetString()
+            if not id_ptr:
+                print("TEST: No string returned from TestGetString")
+                return ""
+            
+            test_str = ctypes.string_at(id_ptr).decode('utf-8')
+            print(f"TEST: String from Go: '{test_str}', length: {len(test_str)}")
+            return test_str
+        except Exception as e:
+            print(f"TEST ERROR: {e}")
+            return f"ERROR: {e}"
+    
     def get_node_id(self) -> str:
         """
         Get the peer ID of this IPFS node.
@@ -813,24 +834,40 @@ class IPFSNode:
             str: The peer ID of the node, or empty string if not available.
         """
         if not self._online:
+            print("IPFS: not online")
             return ""
-            
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        id_ptr = self._lib.GetNodeID(repo_path)
         
-        if not id_ptr:
-            return ""
-            
-        # Copy the string content before freeing the pointer
-        peer_id = ctypes.string_at(id_ptr).decode('utf-8')
+        # First test the basic string function
+        test_str = self.test_get_string()
+        print(f"Basic string test result: '{test_str}'")
         
-        try:
-            # Free the memory allocated in Go
-            self._lib.FreeString(id_ptr)
+        # Now try to get the real node ID
+        try:    
+            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+            print(f"IPFS: Calling GetNodeID with repo path: {self._repo_path}")
+            
+            id_ptr = self._lib.GetNodeID(repo_path)
+            
+            print(f"IPFS: id_ptr is: {id_ptr}")
+            if not id_ptr:
+                print("IPFS: NO ID_PTR")
+                return ""
+            
+            # Copy the string content
+            peer_id = ctypes.string_at(id_ptr).decode('utf-8')
+            print(f"IPFS: Got peer ID: '{peer_id}', length: {len(peer_id)}")
+            
+            # Don't free the memory - let Go's finalizer handle it
+            # The memory will be freed when Go's garbage collector runs
+            
+            # Strip the prefix we added for debugging
+            if peer_id.startswith("ID:"):
+                peer_id = peer_id[3:]
+                
+            return peer_id
         except Exception as e:
-            print(f"Warning: Failed to free memory: {e}")
-            
-        return peer_id
+            print(f"IPFS ERROR in get_node_id: {e}")
+            return f"ERROR: {e}"
         
     @property
     def peer_id(self) -> str:

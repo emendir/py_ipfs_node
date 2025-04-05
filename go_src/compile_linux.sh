@@ -6,9 +6,17 @@ SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 cd $SCRIPT_DIR
 
 set -e # Exit if any command fails
+set -x # Print commands for debugging
 
-go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
+# Clean old files
+rm -f ../kubo_python/lib/libkubo_linux_x86_64.so ../kubo_python/lib/libkubo_linux_x86_64.h
 
+echo "Building libkubo for Linux x86_64..."
+go mod tidy
+go build -v -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
+
+echo "Build completed"
+ls -la ../kubo_python/lib/libkubo_linux_x86_64.so
 
 exit 0
 """
