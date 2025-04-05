@@ -14,7 +14,7 @@ def compile_go_library():
 
     # Define Go source directory
     libkubo_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'libkubo')
+        os.path.abspath(__file__)),'src', 'libkubo')
 
     # Check if Go is installed
     try:
@@ -30,7 +30,7 @@ def compile_go_library():
 
     # Create the lib directory if it doesn't exist
     lib_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'kubo_python', 'lib')
+        os.path.abspath(__file__)), 'src','kubo_python', 'lib')
     if not os.path.exists(lib_dir):
         os.makedirs(lib_dir)
 
