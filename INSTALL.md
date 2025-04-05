@@ -47,8 +47,8 @@ pip install kubo-python
    # Ensure CGO is enabled
    export CGO_ENABLED=1
    
-   # Navigate to the go_src directory
-   cd go_src
+   # Navigate to the libkubo directory
+   cd libkubo
    
    # Initialize the Go module and get dependencies
    go mod tidy
@@ -87,7 +87,7 @@ pip install kubo-python
 
 4. **Go Module Errors**: If you encounter errors related to Go modules:
    ```bash
-   cd go_src
+   cd libkubo
    go mod tidy
    cd ..
    pip install -e .
@@ -117,7 +117,7 @@ If the script runs successfully and connects to the IPFS network, your installat
 If you're experiencing issues, you can test the Go library compilation directly:
 
 ```bash
-cd go_src
+cd libkubo
 export CGO_ENABLED=1
 go build -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
 ```
