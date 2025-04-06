@@ -53,9 +53,6 @@ func init() {
 	plugins, _ = loader.NewPluginLoader("")
 	plugins.Initialize()
 	plugins.Inject()
-
-	// Initialize the shared function reference for other files
-	spawnNodeFunc = AcquireNode
 }
 
 // CreateRepo initializes a new IPFS repository
@@ -224,11 +221,6 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	return api, node, nil
 }
 
-// SpawnNode creates or reuses an IPFS node (backward compatible API)
-// This is the function other files will call
-func spawnNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
-	return AcquireNode(repoPath)
-}
 
 // PubSubEnable enables pubsub on an IPFS node configuration
 //
