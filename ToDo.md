@@ -1,5 +1,4 @@
 ## Debugging:
-- pubsub subscribe doesn't receive data
 
 ## libkubo
 - export ReleaseNode
