@@ -132,21 +132,27 @@ extern int P2PEnable(char* repoPath);
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
 
 // PubSubListTopics lists the topics the node is subscribed to
+//
 extern char* PubSubListTopics(char* repoPath);
 
 // PubSubPublish publishes a message to a topic
+//
 extern int PubSubPublish(char* repoPath, char* topic, void* data, int dataLen);
 
 // PubSubSubscribe subscribes to a topic
+//
 extern long long int PubSubSubscribe(char* repoPath, char* topic);
 
 // PubSubNextMessage gets the next message from a subscription
+//
 extern char* PubSubNextMessage(long long int subID);
 
 // PubSubUnsubscribe unsubscribes from a topic
+//
 extern int PubSubUnsubscribe(long long int subID);
 
 // PubSubPeers lists peers participating in a topic
+//
 extern char* PubSubPeers(char* repoPath, char* topic);
 
 // CreateRepo initializes a new IPFS repository
