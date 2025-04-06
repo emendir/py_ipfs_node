@@ -21,15 +21,15 @@ import (
 )
 
 func init() {
-	f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err == nil {
-		log.SetOutput(f)
-		log.SetPrefix("IPFS: ")
-		log.Println("DEBUG: Logging to file now")
-	} else {
-		// Optional fallback
-		log.Printf("Failed to open log file: %v", err)
-	}
+	// f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// if err == nil {
+	// 	log.SetOutput(f)
+	// 	log.SetPrefix("IPFS: ")
+	// 	log.Println("DEBUG: Logging to file now")
+	// } else {
+	// 	// Optional fallback
+	// 	log.Printf("Failed to open log file: %v", err)
+	// }
 }
 
 var plugins *loader.PluginLoader
@@ -306,6 +306,14 @@ func GetNodeID(repoPath *C.char) *C.char {
 //export CleanupNode
 func CleanupNode(repoPath *C.char) C.int {
 	log.Printf("DEBUG: Cleaning up node...")
+	
+	log.Printf("Closing listeners...")
+	P2PCloseAllListeners(repoPath)
+	log.Printf("Closing forwarders...")
+	P2PCloseAllForwards(repoPath)
+	log.Printf("Closing subscriptions...")
+	PubSubCloseRepoSubscriptions(repoPath)
+	
 	path := C.GoString(repoPath)
 
 	activeNodesMutex.Lock()

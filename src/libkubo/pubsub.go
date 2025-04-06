@@ -332,3 +332,94 @@ func PubSubPeers(repoPath, topic *C.char) *C.char {
 log.Printf("Returning peers")
 	return C.CString(string(peersJSON))
 }
+
+// PubSubCloseRepoSubscriptions closes all active pubsub subscriptions for a specific repository
+//
+//export PubSubCloseRepoSubscriptions
+func PubSubCloseRepoSubscriptions(repoPath *C.char) C.int {
+	path := C.GoString(repoPath)
+	
+	subscriptionsMutex.Lock()
+	defer subscriptionsMutex.Unlock()
+	
+	// Keep track of IDs to delete to avoid modifying map during iteration
+	subsToClose := []int64{}
+	
+	// First pass: find all subscriptions for this repo
+	for id, subInfo := range subscriptions {
+		if subInfo.repoPath == path {
+			subsToClose = append(subsToClose, id)
+		}
+	}
+	
+	if len(subsToClose) == 0 {
+		return C.int(0) // No subscriptions to close for this repo
+	}
+	
+	// Need to release the node only once
+	needReleaseNode := true
+	
+	// Second pass: close the identified subscriptions
+	for _, id := range subsToClose {
+		subInfo := subscriptions[id]
+		
+		// Cancel the context to stop message receiving
+		subInfo.cancel()
+		
+		// Close the subscription
+		if err := subInfo.subscription.Close(); err != nil {
+			log.Printf("Error closing subscription %d: %s\n", id, err)
+		}
+		
+		// Remove from map
+		delete(subscriptions, id)
+	}
+	
+	// Release the node once for this repo path
+	if needReleaseNode {
+		ReleaseNode(path)
+	}
+	
+	return C.int(len(subsToClose))
+}
+
+// PubSubCloseAllSubscriptions closes all active pubsub subscriptions across all repositories
+//
+//export PubSubCloseAllSubscriptions
+func PubSubCloseAllSubscriptions() C.int {
+	subscriptionsMutex.Lock()
+	defer subscriptionsMutex.Unlock()
+	
+	if len(subscriptions) == 0 {
+		return C.int(0) // No subscriptions to close
+	}
+	
+	// Track unique repo paths to release nodes once
+	releasedPaths := make(map[string]bool)
+	
+	// Close each subscription
+	for id, subInfo := range subscriptions {
+		// Cancel the context to stop message receiving
+		subInfo.cancel()
+		
+		// Close the subscription
+		if err := subInfo.subscription.Close(); err != nil {
+			log.Printf("Error closing subscription %d: %s\n", id, err)
+		}
+		
+		// Track repo path to release node later
+		if !releasedPaths[subInfo.repoPath] {
+			releasedPaths[subInfo.repoPath] = true
+		}
+		
+		// Remove from map
+		delete(subscriptions, id)
+	}
+	
+	// Release nodes
+	for path := range releasedPaths {
+		ReleaseNode(path)
+	}
+	
+	return C.int(len(releasedPaths))
+}

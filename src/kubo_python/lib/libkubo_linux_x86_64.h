@@ -132,6 +132,14 @@ extern int P2PEnable(char* repoPath);
 //
 extern char* P2PListForwards(char* repoPath);
 
+// P2PCloseAllListeners closes all p2p listeners
+//
+extern int P2PCloseAllListeners(char* repoPath);
+
+// P2PCloseAllForwards closes all p2p forwards
+//
+extern int P2PCloseAllForwards(char* repoPath);
+
 // ConnectToPeer connects to a peer
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
 
@@ -158,6 +166,14 @@ extern int PubSubUnsubscribe(long long int subID);
 // PubSubPeers lists peers participating in a topic
 //
 extern char* PubSubPeers(char* repoPath, char* topic);
+
+// PubSubCloseRepoSubscriptions closes all active pubsub subscriptions for a specific repository
+//
+extern int PubSubCloseRepoSubscriptions(char* repoPath);
+
+// PubSubCloseAllSubscriptions closes all active pubsub subscriptions across all repositories
+//
+extern int PubSubCloseAllSubscriptions();
 
 // CreateRepo initializes a new IPFS repository
 //
