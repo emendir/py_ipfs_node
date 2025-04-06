@@ -5,7 +5,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from kubo_python import IPFSNode, IPFSP2P
+from kubo_python import IPFSNode
 
 
 def start_echo_server(port):
@@ -38,7 +38,6 @@ def start_echo_server(port):
 def run():
     # Setup server node
     server_node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
-    server_p2p = IPFSP2P(server_node)
     protocol = "test-protocol"
     echo_port = 7777
 
@@ -46,12 +45,11 @@ def run():
     start_echo_server(echo_port)
 
     # Listen for incoming P2P connections on the server
-    assert server_p2p.listen(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
+    assert server_node.listen(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
     print(f"[SERVER] Listening for P2P on protocol {protocol}")
 
     # Setup client node
     client_node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
-    client_p2p = IPFSP2P(client_node)
 
     # Optionally, attempt direct connection
     try:
@@ -61,7 +59,7 @@ def run():
 
     # Forward P2P traffic from client to server
     client_port = 8888
-    assert client_p2p.forward(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
+    assert client_node.forward(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
     print(f"[CLIENT] Forwarding {protocol} -> server {server_node.peer_id}")
 
     # Allow some time for things to set up
@@ -82,9 +80,9 @@ def run():
     assert response == test_message, "Response did not match sent message!"
 
     # Clean up
-    server_p2p.close(protocol)
+    server_node.close_streams(protocol)
     server_node.close()
-    client_p2p.close(protocol)
+    client_node.close_streams(protocol)
     client_node.close()
     print("[TEST] Test passed and cleaned up successfully.")
 
