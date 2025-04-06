@@ -288,3 +288,138 @@ func P2PEnable(repoPath *C.char) C.int {
 	
 	return C.int(1)
 }
+
+// P2PListForwards lists active p2p forwarding connections
+//
+//export P2PListForwards
+func P2PListForwards(repoPath *C.char) *C.char {
+	path := C.GoString(repoPath)
+
+	// Get the node for this repo
+	_, node, err := AcquireNode(path)
+	if err != nil {
+		log.Printf("Error acquiring node for P2P forwards list: %v\n", err)
+		return C.CString("")
+	}
+	defer ReleaseNode(path)
+
+	// Get the P2P service from the node
+	p2pService := node.P2P
+
+	// List all forwarding connections
+	result := make(map[string]interface{})
+
+	// Get local forwards (outgoing connections to remote peers)
+	localForwards := make([]map[string]string, 0)
+	
+	for _, l := range p2pService.ListenersLocal.Listeners {
+		info := map[string]string{
+			"Protocol":      string(l.Protocol()),
+			"ListenAddress": l.ListenAddress().String(),
+			"TargetAddress": l.TargetAddress().String(),
+		}
+		localForwards = append(localForwards, info)
+	}
+	result["LocalForwards"] = localForwards
+
+	// Get active streams associated with forwards
+	activeForwards := make([]map[string]string, 0)
+	
+	for id, s := range p2pService.Streams.Streams {
+		info := map[string]string{
+			"Protocol":     string(s.Protocol),
+			"LocalAddr":    s.OriginAddr.String(),
+			"RemoteAddr":   s.TargetAddr.String(),
+			"ID":           fmt.Sprintf("%d", id),
+		}
+		activeForwards = append(activeForwards, info)
+	}
+	result["ActiveForwards"] = activeForwards
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(result)
+	if err != nil {
+		log.Printf("Error marshaling P2P forwards data: %v\n", err)
+		return C.CString("")
+	}
+
+	return C.CString(string(jsonData))
+}
+
+// P2PCloseAllListeners closes all p2p listeners
+//
+//export P2PCloseAllListeners
+func P2PCloseAllListeners(repoPath *C.char) C.int {
+	path := C.GoString(repoPath)
+
+	// Get the node for this repo
+	_, node, err := AcquireNode(path)
+	if err != nil {
+		log.Printf("Error acquiring node for P2P close all listeners: %v\n", err)
+		return C.int(-1)
+	}
+	defer ReleaseNode(path)
+
+	// Get the P2P service from the node
+	p2pService := node.P2P
+
+	// Count closed listeners
+	totalClosed := 0
+
+	// Close all remote listeners (P2P listeners)
+	matchAllRemote := func(listener p2p.Listener) bool {
+		return true // Match all listeners
+	}
+	
+	remoteClosed := p2pService.ListenersP2P.Close(matchAllRemote)
+	if remoteClosed > 0 {
+		log.Printf("Closed %d remote P2P listener(s)\n", remoteClosed)
+		totalClosed += remoteClosed
+	}
+
+	return C.int(totalClosed)
+}
+
+// P2PCloseAllForwards closes all p2p forwards
+//
+//export P2PCloseAllForwards
+func P2PCloseAllForwards(repoPath *C.char) C.int {
+	path := C.GoString(repoPath)
+
+	// Get the node for this repo
+	_, node, err := AcquireNode(path)
+	if err != nil {
+		log.Printf("Error acquiring node for P2P close all forwards: %v\n", err)
+		return C.int(-1)
+	}
+	defer ReleaseNode(path)
+
+	// Get the P2P service from the node
+	p2pService := node.P2P
+
+	// Count closed forwards
+	totalClosed := 0
+
+	// Close all local listeners (forwards to remote peers)
+	matchAllLocal := func(listener p2p.Listener) bool {
+		return true // Match all local listeners
+	}
+	
+	localClosed := p2pService.ListenersLocal.Close(matchAllLocal)
+	if localClosed > 0 {
+		log.Printf("Closed %d local P2P forward(s)\n", localClosed)
+		totalClosed += localClosed
+	}
+
+	// Close all active streams
+	for _, stream := range p2pService.Streams.Streams {
+		p2pService.Streams.Close(stream)
+		totalClosed++
+	}
+	
+	if len(p2pService.Streams.Streams) > 0 {
+		log.Printf("Closed %d active P2P stream(s)\n", len(p2pService.Streams.Streams))
+	}
+
+	return C.int(totalClosed)
+}
