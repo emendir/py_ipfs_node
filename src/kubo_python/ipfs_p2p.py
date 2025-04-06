@@ -50,7 +50,7 @@ class P2PStream:
         return f"P2PStream(protocol={self.protocol}, origin={self.origin_address}, target={self.target_address})"
 
 
-class IPFSP2P:
+class NodeStreamMounting:
     """
     Provides P2P stream mounting functionality for IPFS nodes.
     

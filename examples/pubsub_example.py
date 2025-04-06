@@ -19,7 +19,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode, IPFSMessage
+from kubo_python import IpfsNode, IPFSMessage
 
 def message_callback(message: IPFSMessage) -> None:
     """Callback function for received messages."""
@@ -29,7 +29,7 @@ def subscriber_mode(repo_path: str, topic: str):
     """Run in subscriber mode."""
     print(f"Starting subscriber for topic: {topic}")
     
-    with IPFSNode(repo_path) as node:
+    with IpfsNode(repo_path) as node:
         print("IPFS node created")
         print(f"Subscribing to topic: {topic}")
         
@@ -50,7 +50,7 @@ def publisher_mode(repo_path: str, topic: str):
     """Run in publisher mode."""
     print(f"Starting publisher for topic: {topic}")
     
-    with IPFSNode(repo_path) as node:
+    with IpfsNode(repo_path) as node:
         print("IPFS node created")
         
         try:

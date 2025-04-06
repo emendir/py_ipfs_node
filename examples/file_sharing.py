@@ -18,7 +18,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode
+from kubo_python import IpfsNode
 
 def add_files(node, path, recursive=True):
     """Add a file or directory to IPFS."""
@@ -73,7 +73,7 @@ def main():
     os.makedirs(args.repo, exist_ok=True)
     
     # Create IPFS node with the specified repository
-    with IPFSNode(args.repo) as node:
+    with IpfsNode(args.repo) as node:
         if args.command == 'add':
             add_files(node, args.path, args.recursive)
         elif args.command == 'get':

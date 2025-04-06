@@ -16,7 +16,7 @@ import tempfile
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode
+from kubo_python import IpfsNode
 
 def main():
     # Create a temporary file for the example
@@ -27,7 +27,7 @@ def main():
     try:
         # Create an ephemeral IPFS node
         print("Creating ephemeral IPFS node...")
-        with IPFSNode.ephemeral() as node:
+        with IpfsNode.ephemeral() as node:
             # Add a file to IPFS
             print(f"Adding file: {temp_file_path}")
             file_cid = node.add_file(temp_file_path)

@@ -23,7 +23,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode, IPFSMessage, IPFSSubscription
+from kubo_python import IpfsNode, IPFSMessage, IPFSSubscription
 
 class ChatApp:
     """A simple chat application using IPFS PubSub."""
@@ -46,7 +46,7 @@ class ChatApp:
             self.username = username
             
         # Create IPFS node
-        self.node = IPFSNode(None, enable_pubsub=True)
+        self.node = IpfsNode(None, enable_pubsub=True)
         print(f"IPFS Peer ID: {self.node.peer_id}")
         # Dict to keep track of active room subscriptions
         self.rooms = {}

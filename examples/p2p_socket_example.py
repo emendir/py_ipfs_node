@@ -28,7 +28,7 @@ from pathlib import Path
 
 # Add the parent directory to the path so we can import the module
 sys.path.append(str(Path(__file__).parent.parent))
-from src.kubo_python import IPFSNode, IPFSP2P
+from src.kubo_python import IpfsNode, NodeStreamMounting
 
 
 def echo_server(port=8765):
@@ -104,8 +104,8 @@ def run_client(port=8765):
 def run_server():
     """Run an IPFS node that listens for p2p connections and forwards them to the echo server."""
     # Create a temporary IPFS node
-    node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
-    p2p = IPFSP2P(node)
+    node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
+    p2p = NodeStreamMounting(node)
     
     # Print the peer ID
     peer_id = node.peer_id
@@ -150,8 +150,8 @@ def run_client_node(server_peer_id):
         server_peer_id: The peer ID of the node running the listener.
     """
     # Create a temporary IPFS node
-    node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
-    p2p = IPFSP2P(node)
+    node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
+    p2p = NodeStreamMounting(node)
     
     # Print our peer ID
     our_peer_id = node.peer_id

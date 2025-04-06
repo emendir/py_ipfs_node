@@ -20,7 +20,7 @@ from pathlib import Path
 # Add the parent directory to the Python path so we can import the library
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.kubo_python import IPFSNode, IPFSP2P
+from src.kubo_python import IpfsNode, NodeStreamMounting
 
 def main():
     parser = argparse.ArgumentParser(description="Demo of libp2p stream mounting")
@@ -54,10 +54,10 @@ def main():
     
     # Create an IPFS node with a temporary repo
     print("Starting IPFS node...")
-    node = IPFSNode.ephemeral()
+    node = IpfsNode.ephemeral()
     
     # Create P2P interface
-    p2p = IPFSP2P(node)
+    p2p = NodeStreamMounting(node)
     
     try:
         print(f"Node peer ID: {node.peer_id}")

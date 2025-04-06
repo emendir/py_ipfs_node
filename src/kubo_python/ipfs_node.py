@@ -11,9 +11,9 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
 
-from .ipfs_p2p import IPFSP2P
+from .ipfs_p2p import NodeStreamMounting
 from .ipfs_files import NodeFiles
-class IPFSNode(IPFSP2P, NodePubsub, NodeFiles):
+class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
     """
     Python wrapper for a Kubo IPFS node.
 
@@ -288,6 +288,6 @@ class IPFSNode(IPFSP2P, NodePubsub, NodeFiles):
             enable_pubsub: Whether to enable pubsub functionality.
 
         Returns:
-            IPFSNode: A new IPFS node instance with a temporary repository.
+            IpfsNode: A new IPFS node instance with a temporary repository.
         """
         return cls(None, online, enable_pubsub)

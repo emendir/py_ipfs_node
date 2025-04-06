@@ -12,7 +12,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode, IPFSMessage
+from kubo_python import IpfsNode, IPFSMessage
 
 # Create temporary directories for the test
 import tempfile
@@ -31,7 +31,7 @@ def message_callback(message):
 
 def publisher_thread():
     """Thread for publishing messages."""
-    with IPFSNode(pub_repo_path) as node:
+    with IpfsNode(pub_repo_path) as node:
         print(f"Publisher node created with ID: {node.peer_id}")
         
         # Connect to the subscriber by multiaddress
@@ -75,7 +75,7 @@ subscriber_addr = ""
 def subscriber_thread():
     """Thread for subscribing to messages."""
     global subscription, subscriber_id, subscriber_addr
-    with IPFSNode(sub_repo_path) as node:
+    with IpfsNode(sub_repo_path) as node:
         # Store the subscriber ID
         subscriber_id = node.peer_id
         

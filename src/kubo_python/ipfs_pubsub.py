@@ -82,7 +82,7 @@ class IPFSSubscription:
     Represents a subscription to an IPFS pubsub topic.
     """
 
-    def __init__(self, node: 'IPFSNode', sub_id: int, topic: str):
+    def __init__(self, node: 'IpfsNode', sub_id: int, topic: str):
         """
         Initialize a subscription.
 
