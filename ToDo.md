@@ -1,15 +1,16 @@
-## Debugging:
+
+## General
+- test all features
+- improve API
 
 ## libkubo
-- export ReleaseNode
-- CleanupNode: cleanup resources properly
+- CleanupNode: wait till IPFS node is fully shutdown
 
 
 ## ipfs_node:
 - implement ReleaseNode
 
 ## Features
-- ✅ P2P Stream Mounting implemented
-- [ ] DHT operations
-- [ ] Bitswap interactions
+- [x] P2P Stream Mounting implemented
 - [ ] Key management
+- [ ] Config management

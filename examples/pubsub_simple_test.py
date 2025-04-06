@@ -12,7 +12,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IPFSNode, IPFSMessage
+from kubo_python import IpfsNode, IPFSMessage
 
 # Create a temporary directory for the test
 import tempfile
@@ -35,7 +35,7 @@ def main():
     
     try:
         # Create a single IPFS node
-        with IPFSNode(repo_path) as node:
+        with IpfsNode(repo_path) as node:
             print(f"IPFS node created with ID: {node.peer_id}")
             
             # Subscribe to the test topic

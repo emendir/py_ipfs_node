@@ -5,7 +5,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from kubo_python import IPFSNode
+from kubo_python import IpfsNode
 
 
 def start_echo_server(port):
@@ -37,7 +37,7 @@ def start_echo_server(port):
 
 def run():
     # Setup server node
-    server_node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
+    server_node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
     protocol = "test-protocol"
     echo_port = 7777
 
@@ -49,7 +49,7 @@ def run():
     print(f"[SERVER] Listening for P2P on protocol {protocol}")
 
     # Setup client node
-    client_node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
+    client_node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
 
     # Optionally, attempt direct connection
     try:

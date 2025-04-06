@@ -30,10 +30,10 @@ pip install kubo-python
 ### Working with Files
 
 ```python
-from kubo_python import IPFSNode
+from kubo_python import IpfsNode
 
 # Create a new node with a temporary repository
-with IPFSNode.ephemeral() as node:
+with IpfsNode.ephemeral() as node:
     # Add a file to IPFS
     cid = node.add_file("/path/to/file.txt")
     print(f"Added file with CID: {cid}")
@@ -45,9 +45,9 @@ with IPFSNode.ephemeral() as node:
 ### Using PubSub
 
 ```python
-from kubo_python import IPFSNode
+from kubo_python import IpfsNode
 
-with IPFSNode.ephemeral() as node:
+with IpfsNode.ephemeral() as node:
     # Subscribe to a topic
     with node.pubsub_subscribe("my-topic") as subscription:
         # Publish a message
@@ -68,11 +68,11 @@ with IPFSNode.ephemeral() as node:
 ### Using P2P Stream Mounting
 
 ```python
-from kubo_python import IPFSNode, IPFSP2P
+from kubo_python import IpfsNode, NodeStreamMounting
 
 # Create an IPFS node
-with IPFSNode.ephemeral() as node:
-    p2p = IPFSP2P(node)
+with IpfsNode.ephemeral() as node:
+    p2p = NodeStreamMounting(node)
     
     # Example 1: Listen for connections on a protocol and forward them to a local service
     p2p.listen("my-service", "127.0.0.1:8080")
