@@ -19,9 +19,9 @@ import (
 
 // PubSub subscription management
 var (
-	subscriptions      = make(map[int64]subscriptionInfo)
+	subscriptions      = make(map[int64]*subscriptionInfo) // <-- pointer
 	subscriptionsMutex sync.Mutex
-	nextSubID         int64 = 1
+	nextSubID          int64 = 1
 )
 
 // Message represents a pubsub message
@@ -45,6 +45,7 @@ type subscriptionInfo struct {
 }
 
 // PubSubListTopics lists the topics the node is subscribed to
+//
 //export PubSubListTopics
 func PubSubListTopics(repoPath *C.char) *C.char {
 	ctx := context.Background()
@@ -76,13 +77,14 @@ func PubSubListTopics(repoPath *C.char) *C.char {
 }
 
 // PubSubPublish publishes a message to a topic
+//
 //export PubSubPublish
 func PubSubPublish(repoPath, topic *C.char, data unsafe.Pointer, dataLen C.int) C.int {
 	ctx := context.Background()
-	
+
 	path := C.GoString(repoPath)
 	topicStr := C.GoString(topic)
-	
+
 	// Convert data to Go byte slice
 	dataBytes := C.GoBytes(data, dataLen)
 
@@ -105,6 +107,7 @@ func PubSubPublish(repoPath, topic *C.char, data unsafe.Pointer, dataLen C.int) 
 }
 
 // PubSubSubscribe subscribes to a topic
+//
 //export PubSubSubscribe
 func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 	path := C.GoString(repoPath)
@@ -135,9 +138,9 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 	subscriptionsMutex.Lock()
 	subID := nextSubID
 	nextSubID++
-	
-	// Store subscription
-	subscriptions[subID] = subscriptionInfo{
+
+	// Store subscription reference
+	subInfo := &subscriptionInfo{
 		topic:        topicStr,
 		subscription: subscription,
 		messageQueue: []Message{},
@@ -146,6 +149,7 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 		cancel:       cancel,
 		repoPath:     path,
 	}
+	subscriptions[subID] = subInfo
 	subscriptionsMutex.Unlock()
 
 	// Start message receiver goroutine
@@ -191,6 +195,7 @@ func messageReceiver(subID int64, subscription iface.PubSubSubscription, topic s
 				Data:    msg.Data(),
 				TopicID: topic,
 			}
+			// fmt.Fprintf(os.Stderr, "SubID: %d Received message! \n", subID)
 
 			if msg.Seq() != nil {
 				message.Seqno = msg.Seq()
@@ -209,9 +214,11 @@ func messageReceiver(subID int64, subscription iface.PubSubSubscription, topic s
 }
 
 // PubSubNextMessage gets the next message from a subscription
+//
 //export PubSubNextMessage
 func PubSubNextMessage(subID C.longlong) *C.char {
 	id := int64(subID)
+	// fmt.Fprintf(os.Stderr, "Getting next message..\n")
 
 	subscriptionsMutex.Lock()
 	subInfo, exists := subscriptions[id]
@@ -228,6 +235,7 @@ func PubSubNextMessage(subID C.longlong) *C.char {
 
 	if len(subInfo.messageQueue) == 0 {
 		// No messages available
+		// fmt.Fprintf(os.Stderr, "SubID: %d No message available.\n", subID)
 		return nil
 	}
 
@@ -242,11 +250,13 @@ func PubSubNextMessage(subID C.longlong) *C.char {
 		fmt.Fprintf(os.Stderr, "Error marshaling message to JSON: %s\n", err)
 		return nil
 	}
+	// fmt.Fprintf(os.Stderr, "Got next message! %s\n", messageJSON)
 
 	return C.CString(string(messageJSON))
 }
 
 // PubSubUnsubscribe unsubscribes from a topic
+//
 //export PubSubUnsubscribe
 func PubSubUnsubscribe(subID C.longlong) C.int {
 	id := int64(subID)
@@ -278,10 +288,11 @@ func PubSubUnsubscribe(subID C.longlong) C.int {
 }
 
 // PubSubPeers lists peers participating in a topic
+//
 //export PubSubPeers
 func PubSubPeers(repoPath, topic *C.char) *C.char {
 	ctx := context.Background()
-	
+
 	path := C.GoString(repoPath)
 	topicStr := C.GoString(topic)
 
