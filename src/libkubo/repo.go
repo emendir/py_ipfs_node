@@ -5,7 +5,7 @@ import "C"
 
 import (
 	"context"
-	"encoding/json"
+	// "encoding/json"
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/kubo/config"
 	"github.com/ipfs/kubo/core"
@@ -13,7 +13,7 @@ import (
 	nodep2p "github.com/ipfs/kubo/core/node/libp2p"
 	"github.com/ipfs/kubo/plugin/loader"
 	"github.com/ipfs/kubo/repo/fsrepo"
-	"github.com/libp2p/go-libp2p/core/peer"
+	// "github.com/libp2p/go-libp2p/core/peer"
 	"log"
 	"os"
 	"runtime"
@@ -89,8 +89,6 @@ func CreateRepo(repoPath *C.char) C.int {
 		log.Printf("Error initializing IPFS repo: %s\n", err)
 		return C.int(-2)
 	}
-	AcquireNode(path)
-	log.Println("HELLO THERE!")
 	return C.int(1) // Success
 }
 
@@ -167,40 +165,6 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		return nil, nil, err
 	}
 
-	// Get the config to check if pubsub is enabled
-	cfg, err := repo.Config()
-	if err != nil {
-		log.Printf("DEBUG: Error getting repo config: %v\n", err)
-		repo.Close()
-		return nil, nil, err
-	}
-
-	// Automatically enable pubsub experiments in the node options
-	// We're modifying the raw config file and also setting the Experimental flag
-
-	// Convert to JSON map for direct manipulation
-	cfgRaw, err := json.Marshal(cfg)
-	if err == nil {
-		cfgMap := map[string]interface{}{}
-		if json.Unmarshal(cfgRaw, &cfgMap) == nil {
-			// Check the experimental section
-			if expMap, ok := cfgMap["Experimental"].(map[string]interface{}); ok {
-				// Set pubsub enabled
-				expMap["Pubsub"] = true
-				expMap["Libp2pStreamMounting"] = true
-				expMap["P2pHttpProxy"] = true
-				log.Printf("DEBUG: Setting experimental features in config\n")
-			}
-		}
-	}
-
-	// Update the repo config with pubsub enabled
-	err = repo.SetConfig(cfg)
-	if err != nil {
-		log.Printf("DEBUG: Warning - could not update repo config: %v\n", err)
-		// Continue anyway
-	}
-
 	// Create a custom build configuration based on platform
 	var nodeOptions *core.BuildCfg
 
@@ -256,21 +220,6 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		return nil, nil, err
 	}
 
-	peerInfo, err := peer.AddrInfoFromString("/ip4/192.168.189.106/udp/4001/quic-v1/p2p/12D3KooWCq7RiBeLTZFeBRX4zmfYDunHPmgT3zZSdQKcx7Es34py")
-	if err != nil {
-		log.Printf("Error parsing peer address: %s\n", err)
-
-	} else {
-
-		// Connect to the peer
-		log.Printf("DEBUG: Connecting to peer\n")
-		err = api.Swarm().Connect(ctx, *peerInfo)
-		if err != nil {
-			log.Printf("Error connecting to peer: %s\n", err)
-
-		}
-	}
-
 	log.Printf("DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
@@ -311,56 +260,7 @@ func PubSubEnable(repoPath *C.char) C.int {
 	// Enable experimental features
 	cfg.Experimental.Libp2pStreamMounting = true
 	cfg.Experimental.P2pHttpProxy = true
-
-	// IPFS API doesn't expose Pubsub setting in the new structure
-	// Directly modify the raw config
-
-	// Convert cfg to plain config map
-	cfgMap := map[string]interface{}{}
-	cfgRaw, err := json.Marshal(cfg)
-	if err != nil {
-		log.Printf("Error marshaling config: %s\n", err)
-		return C.int(-5)
-	}
-
-	err = json.Unmarshal(cfgRaw, &cfgMap)
-	if err != nil {
-		log.Printf("Error unmarshaling config map: %s\n", err)
-		return C.int(-6)
-	}
-
-	// Ensure the Pubsub field is set in Experimental section
-	if expMap, ok := cfgMap["Experimental"].(map[string]interface{}); ok {
-		expMap["Pubsub"] = true
-		expMap["Libp2pStreamMounting"] = true
-		expMap["P2pHttpProxy"] = true
-		log.Printf("DEBUG: Enabled experimental features in Experimental map\n")
-	} else {
-		// Create Experimental map if it doesn't exist
-		cfgMap["Experimental"] = map[string]interface{}{
-			"Pubsub": true,
-			"Libp2pStreamMounting": true,
-			"P2pHttpProxy": true,
-		}
-		log.Printf("DEBUG: Created new Experimental map with experimental features enabled\n")
-	}
-
-	// Marshal back to JSON
-	cfgRaw, err = json.Marshal(cfgMap)
-	if err != nil {
-		log.Printf("Error marshaling modified config: %s\n", err)
-		return C.int(-7)
-	}
-
-	// Create a new config to override the existing one
-	var newCfg config.Config
-	if err := json.Unmarshal(cfgRaw, &newCfg); err != nil {
-		log.Printf("Error unmarshaling to config: %s\n", err)
-		return C.int(-8)
-	}
-
-	// Set the updated config
-	if err := repo.SetConfig(&newCfg); err != nil {
+	if err := repo.SetConfig(cfg); err != nil {
 		log.Printf("Error setting updated config: %s\n", err)
 		return C.int(-9)
 	}

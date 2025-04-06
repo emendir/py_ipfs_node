@@ -1,7 +1,9 @@
-## libkubo
-- rename libkubo
-- export ReleaseNode
+## Debugging:
+- pubsub subscribe doesn't receive data
 
+## libkubo
+- export ReleaseNode
+- cleanup CreateRepo, createNewNode, PubSubEnable
 
 ## ipfs_node:
 - implement ReleaseNode
