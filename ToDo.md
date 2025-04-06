@@ -2,7 +2,8 @@
 
 ## libkubo
 - export ReleaseNode
-- cleanup CreateRepo, createNewNode, PubSubEnable
+- CleanupNode: cleanup resources properly
+
 
 ## ipfs_node:
 - implement ReleaseNode

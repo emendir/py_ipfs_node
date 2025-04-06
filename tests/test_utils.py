@@ -88,5 +88,7 @@ class TestPeerUtils(unittest.TestCase):
         for peer in peers:
             self.assertTrue(peer_utils.is_valid_multiaddr(peer))
 
-if __name__ == "__main__":
+def run():
     unittest.main()
+if __name__ == "__main__":
+    run()

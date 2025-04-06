@@ -96,14 +96,14 @@ func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 
 	// Check if we already have an active node for this repo
 	if nodeInfo, exists := activeNodes[repoPath]; exists {
-		log.Printf("DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
-			repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
+		// log.Printf("DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
+			// repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
 		nodeInfo.RefCount++
 		return nodeInfo.API, nodeInfo.Node, nil
 	}
 
 	// Otherwise create a new node
-	log.Printf("DEBUG: Creating new node for repo %s\n", repoPath)
+	// log.Printf("DEBUG: Creating new node for repo %s\n", repoPath)
 	api, node, err := createNewNode(repoPath)
 	if err != nil {
 		return nil, nil, err
@@ -154,7 +154,7 @@ func ReleaseNode(repoPath string) {
 
 // createNewNode creates a new IPFS node (internal function)
 func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
-	log.Printf("DEBUG: Opening repo at %s\n", repoPath)
+	// log.Printf("DEBUG: Opening repo at %s\n", repoPath)
 	// Open the repo
 	repo, err := fsrepo.Open(repoPath)
 	if err != nil {
@@ -199,7 +199,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		}
 	}
 
-	log.Printf("DEBUG: Creating new IPFS node with pubsub and p2p streaming enabled\n")
+	// log.Printf("DEBUG: Creating new IPFS node with pubsub and p2p streaming enabled\n")
 	ctx := context.Background()
 	node, err := core.NewNode(ctx, nodeOptions)
 	if err != nil {
@@ -209,7 +209,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	}
 
 	// Construct the API
-	log.Printf("DEBUG: Creating CoreAPI\n")
+	// log.Printf("DEBUG: Creating CoreAPI\n")
 	api, err := coreapi.NewCoreAPI(node)
 	if err != nil {
 		log.Printf("DEBUG: Error creating API: %v\n", err)
@@ -217,7 +217,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 		return nil, nil, err
 	}
 
-	log.Printf("DEBUG: Node and API created successfully\n")
+	// log.Printf("DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
 
@@ -257,7 +257,7 @@ func PubSubEnable(repoPath *C.char) C.int {
 		return C.int(-9)
 	}
 
-	log.Printf("DEBUG: Updated config successfully\n")
+	// log.Printf("DEBUG: Updated config successfully\n")
 
 	return C.int(0)
 }
@@ -304,6 +304,7 @@ func GetNodeID(repoPath *C.char) *C.char {
 //
 //export CleanupNode
 func CleanupNode(repoPath *C.char) C.int {
+	log.Printf("DEBUG: Cleaning up node...")
 	path := C.GoString(repoPath)
 
 	activeNodesMutex.Lock()
@@ -311,6 +312,7 @@ func CleanupNode(repoPath *C.char) C.int {
 
 	nodeInfo, exists := activeNodes[path]
 	if !exists {
+		log.Printf("WARNING: Didn't find node to clean up!\n")
 		return C.int(-1) // Node doesn't exist
 	}
 

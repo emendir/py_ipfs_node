@@ -35,7 +35,7 @@ def start_echo_server(port):
     return thread
 
 
-def run_test_message_through_p2p():
+def run():
     # Setup server node
     server_node = IPFSNode.ephemeral(online=True, enable_pubsub=True)
     server_p2p = IPFSP2P(server_node)
@@ -90,4 +90,4 @@ def run_test_message_through_p2p():
 
 
 if __name__ == "__main__":
-    run_test_message_through_p2p()
+    run()

@@ -103,7 +103,7 @@ def subscriber_thread():
         print(f"Closing subscription, received {len(messages_received)} messages")
         subscription.close()
 
-def main():
+def run():
     """Main test function."""
     # Create the repository directories
     os.makedirs(pub_repo_path, exist_ok=True)
@@ -146,4 +146,4 @@ def main():
         sub_temp_dir.cleanup()
 
 if __name__ == "__main__":
-    main()
+    run()

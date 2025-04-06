@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"unsafe"
+	// "unsafe"
 
 	"github.com/ipfs/boxo/coreiface/options"
 	ipath "github.com/ipfs/boxo/coreiface/path"
@@ -95,7 +95,7 @@ func AddFile(repoPath, filePath *C.char) *C.char {
 // FreeString is a no-op for now - we'll let Go's garbage collection handle the memory
 //export FreeString
 func FreeString(str *C.char) {
-	fmt.Fprintf(os.Stderr, "DEBUG: FreeString called (NO-OP) for pointer %p\n", unsafe.Pointer(str))
+	// fmt.Fprintf(os.Stderr, "DEBUG: FreeString called (NO-OP) for pointer %p\n", unsafe.Pointer(str))
 	// We're not actually freeing memory here to avoid the crash
 	// C.free(unsafe.Pointer(str)) 
 }
