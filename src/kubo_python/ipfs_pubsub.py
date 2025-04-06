@@ -328,7 +328,6 @@ class NodePubsub:
 
         try:
             # Free the memory allocated in Go
-            print("FreeStr: Pubsub Peers")
             self._lib.FreeString(peers_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
@@ -365,7 +364,6 @@ class NodePubsub:
 
         try:
             # Free the memory allocated in Go
-            print("FreeStr: Pubsub Topoics")
             self._lib.FreeString(topics_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
@@ -406,7 +404,6 @@ class NodePubsub:
 
         try:
             # Free the memory allocated in Go
-            print("FreeStr: Pubsub Next")
             self._lib.FreeString(message_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")

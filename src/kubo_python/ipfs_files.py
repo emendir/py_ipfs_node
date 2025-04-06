@@ -135,7 +135,6 @@ class NodeFiles:
             # Store the memory freeing operation in a separate try block
             try:
                 # Free the memory allocated by C.CString in Go
-                print("FreeStr: Add File")
                 self._lib.FreeString(cid_ptr)
             except Exception as e:
                 print(f"Warning: Failed to free memory: {e}")

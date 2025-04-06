@@ -56,8 +56,6 @@ def main():
     print("Starting IPFS node...")
     node = IpfsNode.ephemeral()
     
-    # Create P2P interface
-    p2p = NodeStreamMounting(node)
     
     try:
         print(f"Node peer ID: {node.peer_id}")
@@ -65,7 +63,7 @@ def main():
         if args.listen:
             # Create a TCP listening connection
             print(f"Creating a TCP listening connection on protocol '{args.protocol}' and port {args.port}")
-            result = p2p.listen(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}")
+            result = node.listen(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}")
             if result:
                 print("✓ Listening connection created successfully")
             else:
@@ -73,7 +71,7 @@ def main():
                 sys.exit(1)
                 
             # List active connections
-            listeners, streams = p2p.list_listeners()
+            listeners, streams = node.list_listeners()
             print(f"Active listeners ({len(listeners)}):")
             for i, listener in enumerate(listeners):
                 print(f"  {i+1}. Protocol: {listener.protocol}, Target: {listener.target_address}")
@@ -95,7 +93,7 @@ def main():
             # Create a TCP forwarding connection
             print(f"Creating a TCP forwarding connection to peer {args.peer_id}")
             print(f"Protocol: {args.protocol}, Local port: {args.port}")
-            result = p2p.forward(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}", f"{args.peer_id}")
+            result = node.forward(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}", f"{args.peer_id}")
             if result:
                 print("✓ Forwarding connection created successfully")
             else:
@@ -103,7 +101,7 @@ def main():
                 sys.exit(1)
                 
             # List active connections
-            listeners, streams = p2p.list_listeners()
+            listeners, streams = node.list_listeners()
             print(f"Active listeners ({len(listeners)}):")
             for i, listener in enumerate(listeners):
                 print(f"  {i+1}. Protocol: {listener.protocol}, Target: {listener.target_address}")
@@ -124,7 +122,7 @@ def main():
     finally:
         # Clean up
         if args.listen or args.forward:
-            p2p.close(args.protocol)
+            node.close_streams(args.protocol)
             print(f"Closed P2P connection for protocol: {args.protocol}")
         
         # Close the IPFS node

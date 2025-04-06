@@ -28,8 +28,7 @@ from pathlib import Path
 
 # Add the parent directory to the path so we can import the module
 sys.path.append(str(Path(__file__).parent.parent))
-from src.kubo_python import IpfsNode, NodeStreamMounting
-
+from src.kubo_python import IpfsNode
 
 def echo_server(port=8765):
     """Simple echo server that listens on the given port."""
@@ -102,10 +101,9 @@ def run_client(port=8765):
 
 
 def run_server():
-    """Run an IPFS node that listens for p2p connections and forwards them to the echo server."""
+    """Run an IPFS node that listens for node connections and forwards them to the echo server."""
     # Create a temporary IPFS node
     node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
-    p2p = NodeStreamMounting(node)
     
     # Print the peer ID
     peer_id = node.peer_id
@@ -121,8 +119,8 @@ def run_server():
     server_thread = threading.Thread(target=echo_server, args=(port,), daemon=True)
     server_thread.start()
     
-    # Create a p2p listener
-    success = p2p.listen(protocol, f"/ip4/127.0.0.1/tcp/{port}")
+    # Create a node listener
+    success = node.listen(protocol, f"/ip4/127.0.0.1/tcp/{port}")
     if success:
         print(f"P2P listener created for protocol '{protocol}' -> /ip4/127.0.0.1/tcp/{port}")
     else:
@@ -138,27 +136,26 @@ def run_server():
         print("Shutting down...")
     finally:
         # Clean up
-        p2p.close(protocol)
+        node.close_streams(protocol)
         node.close()
 
 
 def run_client_node(server_peer_id):
     """
-    Run an IPFS node that connects to another node's p2p service.
+    Run an IPFS node that connects to another node's node service.
     
     Args:
         server_peer_id: The peer ID of the node running the listener.
     """
     # Create a temporary IPFS node
     node = IpfsNode.ephemeral(online=True, enable_pubsub=True)
-    p2p = NodeStreamMounting(node)
     
     # Print our peer ID
     our_peer_id = node.peer_id
     print(f"Client node peer ID: {our_peer_id}")
     
     # Connect to the peer (not always necessary, but can help establish connection)
-    target_multiaddr = f"/p2p/{server_peer_id}"
+    target_multiaddr = f"/node/{server_peer_id}"
     print(f"Connecting to peer: {target_multiaddr}")
     try:
         node.connect_to_peer(target_multiaddr)
@@ -171,8 +168,8 @@ def run_client_node(server_peer_id):
     protocol = "echo-protocol"
     local_port = 9876
     
-    # Create a p2p forwarding connection
-    success = p2p.forward(protocol, f"/ip4/127.0.0.1/tcp/{local_port}", server_peer_id)
+    # Create a node forwarding connection
+    success = node.forward(protocol, f"/ip4/127.0.0.1/tcp/{local_port}", server_peer_id)
     if success:
         print(f"P2P forwarding created: /ip4/127.0.0.1/tcp/{local_port} -> {server_peer_id} via {protocol}")
     else:
@@ -196,7 +193,7 @@ def run_client_node(server_peer_id):
     finally:
         # Clean up
         print("Closing P2P connection...")
-        p2p.close(protocol)
+        node.close(protocol)
         node.close()
 
 
