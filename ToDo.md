@@ -8,6 +8,7 @@
 
 
 ## ipfs_node:
+- auto-generate IpfsNode._lib
 - implement ReleaseNode
 
 ## Features
