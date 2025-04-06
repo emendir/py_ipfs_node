@@ -218,3 +218,230 @@ class IPFSSubscription:
             daemon=True
         )
         self._callback_thread.start()
+
+
+class NodePubsub:
+    # PubSub methods
+    def pubsub_subscribe(self, topic: str) -> IPFSSubscription:
+        """
+        Subscribe to a pubsub topic.
+
+        Args:
+            topic: The topic to subscribe to.
+
+        Returns:
+            IPFSSubscription: A subscription object for the topic.
+        """
+        if not self._online:
+            raise RuntimeError("Cannot subscribe to topics in offline mode")
+
+        if not self._enable_pubsub:
+            raise RuntimeError("PubSub is not enabled for this node")
+
+        # Subscribe to the topic
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        topic_c = ctypes.c_char_p(topic.encode('utf-8'))
+
+        sub_id = self._lib.PubSubSubscribe(repo_path, topic_c)
+        if sub_id < 0:
+            raise RuntimeError(f"Failed to subscribe to topic: {topic}")
+
+        # Create the subscription object
+        subscription = IPFSSubscription(self, sub_id, topic)
+
+        # Track the subscription
+        if topic not in self._subscriptions:
+            self._subscriptions[topic] = set()
+        self._subscriptions[topic].add(subscription)
+
+        return subscription
+
+    def pubsub_publish(self, topic: str, data: Union[str, bytes]) -> bool:
+        """
+        Publish a message to a pubsub topic.
+
+        Args:
+            topic: The topic to publish to.
+            data: The message data to publish. If a string is provided, it will be
+                  encoded as UTF-8 bytes.
+
+        Returns:
+            bool: True if the message was published successfully.
+        """
+        if not self._online:
+            raise RuntimeError("Cannot publish to topics in offline mode")
+
+        if not self._enable_pubsub:
+            raise RuntimeError("PubSub is not enabled for this node")
+
+        # Convert string to bytes if needed
+        if isinstance(data, str):
+            data_bytes = data.encode('utf-8')
+        else:
+            data_bytes = data
+
+        # Get the repository path
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        topic_c = ctypes.c_char_p(topic.encode('utf-8'))
+
+        # Create a data buffer for the message
+        data_len = len(data_bytes)
+        data_buffer = ctypes.create_string_buffer(data_bytes, data_len)
+
+        # Publish the message
+        result = self._lib.PubSubPublish(
+            repo_path,
+            topic_c,
+            ctypes.cast(data_buffer, ctypes.c_void_p),
+            ctypes.c_int(data_len)
+        )
+
+        return result == 0
+
+    def pubsub_peers(self, topic: Optional[str] = None) -> List[str]:
+        """
+        List peers participating in pubsub.
+
+        Args:
+            topic: Optional topic to filter peers. If None, returns all pubsub peers.
+
+        Returns:
+            List[str]: List of peer IDs.
+        """
+        if not self._online:
+            raise RuntimeError("Cannot list peers in offline mode")
+
+        if not self._enable_pubsub:
+            raise RuntimeError("PubSub is not enabled for this node")
+
+        # Get the repository path
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        topic_c = ctypes.c_char_p((topic or "").encode('utf-8'))
+
+        # Get peers
+        peers_ptr = self._lib.PubSubPeers(repo_path, topic_c)
+        if not peers_ptr:
+            return []
+
+        # Copy the string content before freeing the pointer
+        json_data = ctypes.string_at(peers_ptr).decode('utf-8')
+
+        try:
+            # Free the memory allocated in Go
+            print("FreeStr: Pubsub Peers")
+            self._lib.FreeString(peers_ptr)
+        except Exception as e:
+            print(f"Warning: Failed to free memory: {e}")
+
+        try:
+            # Parse the JSON array
+            return json.loads(json_data)
+        except json.JSONDecodeError:
+            return []
+
+    def pubsub_topics(self) -> List[str]:
+        """
+        List subscribed pubsub topics.
+
+        Returns:
+            List[str]: List of topic names.
+        """
+        if not self._online:
+            raise RuntimeError("Cannot list topics in offline mode")
+
+        if not self._enable_pubsub:
+            raise RuntimeError("PubSub is not enabled for this node")
+
+        # Get the repository path
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+
+        # Get topics
+        topics_ptr = self._lib.PubSubListTopics(repo_path)
+        if not topics_ptr:
+            return []
+
+        # Copy the string content before freeing the pointer
+        json_data = ctypes.string_at(topics_ptr).decode('utf-8')
+
+        try:
+            # Free the memory allocated in Go
+            print("FreeStr: Pubsub Topoics")
+            self._lib.FreeString(topics_ptr)
+        except Exception as e:
+            print(f"Warning: Failed to free memory: {e}")
+
+        try:
+            # Parse the JSON array
+            return json.loads(json_data)
+        except json.JSONDecodeError:
+            return []
+            
+    def _enable_pubsub_config(self):
+        """Enable pubsub in the IPFS configuration."""
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        result = self._lib.PubSubEnable(repo_path)
+
+        if result < 0:
+            raise RuntimeError(f"Failed to enable pubsub: {result}")
+
+    def _pubsub_next_message(self, subscription_id: int) -> Optional[IPFSMessage]:
+        """
+        Get the next message from a subscription.
+
+        Args:
+            subscription_id: The subscription ID.
+
+        Returns:
+            IPFSMessage or None: The next message, or None if no message is available.
+        """
+        sub_id = ctypes.c_longlong(subscription_id)
+
+        # Get message as JSON string
+        message_ptr = self._lib.PubSubNextMessage(sub_id)
+        if not message_ptr:
+            return None
+
+        # Copy the string content before freeing the pointer
+        json_data = ctypes.string_at(message_ptr).decode('utf-8')
+
+        try:
+            # Free the memory allocated in Go
+            print("FreeStr: Pubsub Next")
+            self._lib.FreeString(message_ptr)
+        except Exception as e:
+            print(f"Warning: Failed to free memory: {e}")
+
+        try:
+            # Parse the message
+            return IPFSMessage.from_json(json_data)
+        except Exception as e:
+            print(f"Warning: Failed to parse message: {e}")
+            return None
+
+    def _pubsub_unsubscribe(self, subscription_id: int) -> bool:
+        """
+        Unsubscribe from a topic.
+
+        Args:
+            subscription_id: The subscription ID.
+
+        Returns:
+            bool: True if successfully unsubscribed.
+        """
+        sub_id = ctypes.c_longlong(subscription_id)
+        result = self._lib.PubSubUnsubscribe(sub_id)
+
+        # Clean up local subscription tracking
+        to_remove = []
+        for topic, subscriptions in self._subscriptions.items():
+            for sub in list(subscriptions):
+                if sub.id == subscription_id:
+                    subscriptions.remove(sub)
+                    # If no more subscriptions for this topic, remove the topic
+                    if not subscriptions:
+                        to_remove.append(topic)
+
+        for topic in to_remove:
+            del self._subscriptions[topic]
+
+        return result == 0
