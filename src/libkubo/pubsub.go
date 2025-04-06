@@ -6,12 +6,10 @@ import "C"
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
 	"sync"
 	"time"
 	"unsafe"
-
+"log"
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/boxo/coreiface/options"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -54,7 +52,7 @@ func PubSubListTopics(repoPath *C.char) *C.char {
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
+		log.Printf( "Error acquiring node: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 	defer ReleaseNode(path)
@@ -62,14 +60,14 @@ func PubSubListTopics(repoPath *C.char) *C.char {
 	// List topics
 	topics, err := api.PubSub().Ls(ctx)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error listing topics: %s\n", err)
+		log.Printf( "Error listing topics: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 
 	// Convert to JSON
 	topicsJSON, err := json.Marshal(topics)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling topics to JSON: %s\n", err)
+		log.Printf( "Error marshaling topics to JSON: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 
@@ -91,7 +89,7 @@ func PubSubPublish(repoPath, topic *C.char, data unsafe.Pointer, dataLen C.int) 
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
+		log.Printf( "Error acquiring node: %s\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
@@ -99,7 +97,7 @@ func PubSubPublish(repoPath, topic *C.char, data unsafe.Pointer, dataLen C.int) 
 	// Publish message
 	err = api.PubSub().Publish(ctx, topicStr, dataBytes)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error publishing to topic: %s\n", err)
+		log.Printf( "Error publishing to topic: %s\n", err)
 		return C.int(-2)
 	}
 
@@ -116,7 +114,7 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
+		log.Printf( "Error acquiring node: %s\n", err)
 		return C.longlong(-1)
 	}
 	// Note: We don't release the node here because the subscription needs it
@@ -128,7 +126,7 @@ func PubSubSubscribe(repoPath, topic *C.char) C.longlong {
 	// Subscribe to topic
 	subscription, err := api.PubSub().Subscribe(ctx, topicStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error subscribing to topic: %s\n", err)
+		log.Printf( "Error subscribing to topic: %s\n", err)
 		ReleaseNode(path) // Release the node since we failed
 		cancel()
 		return C.longlong(-2)
@@ -182,7 +180,7 @@ func messageReceiver(subID int64, subscription iface.PubSubSubscription, topic s
 			if err != nil {
 				// Context timeout or error
 				if err != context.DeadlineExceeded && err != context.Canceled {
-					fmt.Fprintf(os.Stderr, "Error receiving message: %s\n", err)
+					log.Printf( "Error receiving message: %s\n", err)
 				}
 				// Small sleep to avoid tight CPU loop
 				time.Sleep(10 * time.Millisecond)
@@ -195,7 +193,7 @@ func messageReceiver(subID int64, subscription iface.PubSubSubscription, topic s
 				Data:    msg.Data(),
 				TopicID: topic,
 			}
-			// fmt.Fprintf(os.Stderr, "SubID: %d Received message! \n", subID)
+			// log.Printf( "SubID: %d Received message! \n", subID)
 
 			if msg.Seq() != nil {
 				message.Seqno = msg.Seq()
@@ -218,14 +216,14 @@ func messageReceiver(subID int64, subscription iface.PubSubSubscription, topic s
 //export PubSubNextMessage
 func PubSubNextMessage(subID C.longlong) *C.char {
 	id := int64(subID)
-	// fmt.Fprintf(os.Stderr, "Getting next message..\n")
+	// log.Printf( "Getting next message..\n")
 
 	subscriptionsMutex.Lock()
 	subInfo, exists := subscriptions[id]
 	subscriptionsMutex.Unlock()
 
 	if !exists {
-		fmt.Fprintf(os.Stderr, "Error: Subscription %d not found\n", id)
+		log.Printf( "Error: Subscription %d not found\n", id)
 		return nil
 	}
 
@@ -235,7 +233,7 @@ func PubSubNextMessage(subID C.longlong) *C.char {
 
 	if len(subInfo.messageQueue) == 0 {
 		// No messages available
-		// fmt.Fprintf(os.Stderr, "SubID: %d No message available.\n", subID)
+		// log.Printf( "SubID: %d No message available.\n", subID)
 		return nil
 	}
 
@@ -247,10 +245,10 @@ func PubSubNextMessage(subID C.longlong) *C.char {
 	// Convert to JSON
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling message to JSON: %s\n", err)
+		log.Printf( "Error marshaling message to JSON: %s\n", err)
 		return nil
 	}
-	// fmt.Fprintf(os.Stderr, "Got next message! %s\n", messageJSON)
+	// log.Printf( "Got next message! %s\n", messageJSON)
 
 	return C.CString(string(messageJSON))
 }
@@ -266,7 +264,7 @@ func PubSubUnsubscribe(subID C.longlong) C.int {
 
 	subInfo, exists := subscriptions[id]
 	if !exists {
-		fmt.Fprintf(os.Stderr, "Error: Subscription %d not found\n", id)
+		log.Printf( "Error: Subscription %d not found\n", id)
 		return C.int(-1)
 	}
 
@@ -275,7 +273,7 @@ func PubSubUnsubscribe(subID C.longlong) C.int {
 
 	// Close the subscription
 	if err := subInfo.subscription.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error closing subscription: %s\n", err)
+		log.Printf( "Error closing subscription: %s\n", err)
 	}
 
 	// Release the node associated with this subscription
@@ -299,7 +297,7 @@ func PubSubPeers(repoPath, topic *C.char) *C.char {
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error acquiring node: %s\n", err)
+		log.Printf( "Error acquiring node: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 	defer ReleaseNode(path)
@@ -315,7 +313,7 @@ func PubSubPeers(repoPath, topic *C.char) *C.char {
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error listing peers: %s\n", err)
+		log.Printf( "Error listing peers: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 
@@ -328,9 +326,9 @@ func PubSubPeers(repoPath, topic *C.char) *C.char {
 	// Convert to JSON
 	peersJSON, err := json.Marshal(peerStrs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling peers to JSON: %s\n", err)
+		log.Printf( "Error marshaling peers to JSON: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
-
+log.Printf("Returning peers")
 	return C.CString(string(peersJSON))
 }

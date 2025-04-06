@@ -89,7 +89,10 @@ class IPFSNode:
         # Define function signatures
         self._lib.RunNode.argtypes = [ctypes.c_char_p]
         self._lib.RunNode.restype = ctypes.c_int
-
+        
+        self._lib.ReleaseNode.argtypes = [ctypes.c_char_p]
+        self._lib.ReleaseNode.restype = ctypes.c_int
+        
         self._lib.CreateRepo.argtypes = [ctypes.c_char_p]
         self._lib.CreateRepo.restype = ctypes.c_int
 
@@ -149,8 +152,7 @@ class IPFSNode:
         if result < 0:
             raise RuntimeError(
                 f"Failed to initialize IPFS repository: {result}")
-        print(f"Initalised repo at: {repo_path}")
-        print(result)
+        # print(f"Initalised repo at: {repo_path}")
 
     def add_file(self, file_path: str) -> str:
         """
@@ -180,6 +182,7 @@ class IPFSNode:
             # Store the memory freeing operation in a separate try block
             try:
                 # Free the memory allocated by C.CString in Go
+                print("FreeStr: Add File")
                 self._lib.FreeString(cid_ptr)
             except Exception as e:
                 print(f"Warning: Failed to free memory: {e}")
@@ -382,6 +385,7 @@ class IPFSNode:
 
         try:
             # Free the memory allocated in Go
+            print("FreeStr: Pubsub Next")
             self._lib.FreeString(message_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
@@ -563,6 +567,7 @@ class IPFSNode:
 
         try:
             # Free the memory allocated in Go
+            print("FreeStr: Pubsub Peers")
             self._lib.FreeString(peers_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
@@ -599,6 +604,7 @@ class IPFSNode:
 
         try:
             # Free the memory allocated in Go
+            print("FreeStr: Pubsub Topoics")
             self._lib.FreeString(topics_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
