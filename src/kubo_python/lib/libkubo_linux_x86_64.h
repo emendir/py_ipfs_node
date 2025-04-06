@@ -128,6 +128,10 @@ extern char* P2PListListeners(char* repoPath);
 //
 extern int P2PEnable(char* repoPath);
 
+// P2PListForwards lists active p2p forwarding connections
+//
+extern char* P2PListForwards(char* repoPath);
+
 // ConnectToPeer connects to a peer
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
 
@@ -159,6 +163,10 @@ extern char* PubSubPeers(char* repoPath, char* topic);
 //
 extern int CreateRepo(char* repoPath);
 extern int RunNode(char* repoPath);
+
+// ReleaseNode decreases the reference count for a node, closing it if no references remain
+//
+extern void ReleaseNode(GoString repoPath);
 
 // PubSubEnable enables pubsub on an IPFS node configuration
 //

@@ -97,7 +97,7 @@ func AcquireNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	// Check if we already have an active node for this repo
 	if nodeInfo, exists := activeNodes[repoPath]; exists {
 		// log.Printf("DEBUG: Reusing existing node for repo %s (refcount: %d -> %d)\n",
-			// repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
+		// repoPath, nodeInfo.RefCount, nodeInfo.RefCount+1)
 		nodeInfo.RefCount++
 		return nodeInfo.API, nodeInfo.Node, nil
 	}
@@ -132,6 +132,8 @@ func RunNode(repoPath *C.char) C.int {
 }
 
 // ReleaseNode decreases the reference count for a node, closing it if no references remain
+//
+//export ReleaseNode
 func ReleaseNode(repoPath string) {
 	activeNodesMutex.Lock()
 	defer activeNodesMutex.Unlock()
@@ -220,7 +222,6 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	// log.Printf("DEBUG: Node and API created successfully\n")
 	return api, node, nil
 }
-
 
 // PubSubEnable enables pubsub on an IPFS node configuration
 //
