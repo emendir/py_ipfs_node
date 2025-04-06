@@ -2,7 +2,6 @@ import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
 
-from .ipfs_node import IPFSNode
 
 
 class P2PMapping:
@@ -59,30 +58,20 @@ class IPFSP2P:
     and connect to remote TCP services exposed by other nodes.
     """
     
-    def __init__(self, node: IPFSNode):
-        """
-        Initialize the P2P interface.
+    def _enable_p2p(self) -> bool:
+        """Enable p2p functionality in the IPFS configuration."""
+        # Define function signature if not already defined
+        if not hasattr(self._lib, 'P2PEnable'):
+            self._lib.P2PEnable.argtypes = [ctypes.c_char_p]
+            self._lib.P2PEnable.restype = ctypes.c_int
+            
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        result = self._lib.P2PEnable(repo_path)
         
-        Args:
-            node: The IPFS node to use.
-        """
-        self._node = node
-        self._lib = node._lib
-        self._repo_path = node._repo_path
-        
-        # Check if p2p functionality is enabled
-        self.enable()
-    
-    def enable(self) -> bool:
-        """
-        Enable P2P functionality in the node configuration.
-        
-        Returns:
-            bool: True if P2P functionality is enabled, False otherwise.
-        """
-        result = self._lib.P2PEnable(ctypes.c_char_p(self._repo_path.encode('utf-8')))
-        return result > 0
-    
+        if result <= 0:
+            print(f"Warning: Could not enable p2p functionality ({result})")
+            return False
+        return True
     def forward(self, protocol: str, listen_addr: str, target_peer_id: str) -> bool:
         """
         Forward local connections to a remote peer.
@@ -126,7 +115,7 @@ class IPFSP2P:
         )
         return result > 0
     
-    def close(self, protocol: str, listen_addr: str = "", target_peer_id: str = "") -> bool:
+    def close_streams(self, protocol: str, listen_addr: str = "", target_peer_id: str = "") -> bool:
         """
         Close a P2P listener or stream.
         
@@ -207,3 +196,174 @@ class IPFSP2P:
             streams.append(stream)
             
         return listeners, streams
+    # P2P TCP Methods
+    def create_tcp_forwarding_connection(self, proto: str, port: int, peer_id: str) -> bool:
+        """
+        Equivalent to the `ipfs p2p forward` command.
+        Creates a mapping from a local port to a service on a remote peer.
+        
+        Args:
+            proto: Protocol string (will be prefixed with '/x/' if not already)
+            port: Local port to forward from
+            peer_id: Target peer ID to forward to
+            
+        Returns:
+            bool: True if the forwarding connection was created successfully
+        """
+        if not self._online:
+            raise RuntimeError("Cannot create TCP forwarding in offline mode")
+            
+        # Construct the listen address
+        listen_addr = f"/ip4/127.0.0.1/tcp/{port}"
+        
+        # Make sure p2p functionality is enabled
+        self._enable_p2p()
+            
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        proto_c = ctypes.c_char_p(proto.encode('utf-8'))
+        listen_addr_c = ctypes.c_char_p(listen_addr.encode('utf-8'))
+        peer_id_c = ctypes.c_char_p(peer_id.encode('utf-8'))
+        
+        # Define function signature if not already defined
+        if not hasattr(self._lib, 'P2PForward'):
+            self._lib.P2PForward.argtypes = [
+                ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p
+            ]
+            self._lib.P2PForward.restype = ctypes.c_int
+        
+        result = self._lib.P2PForward(repo_path, proto_c, listen_addr_c, peer_id_c)
+        return result > 0
+
+    def close_tcp_connection(self, proto: str = None, port: int = None, peer_id: str = None) -> int:
+        """
+        Close specific TCP p2p connections, optionally filtered by protocol, port, or peer ID.
+        
+        Args:
+            proto: Optional protocol filter
+            port: Optional port filter
+            peer_id: Optional peer ID filter
+            
+        Returns:
+            int: Number of connections closed
+        """
+        # Define function signature if not already defined
+        if not hasattr(self._lib, 'P2PClose'):
+            self._lib.P2PClose.argtypes = [
+                ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p
+            ]
+            self._lib.P2PClose.restype = ctypes.c_int
+        
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        
+        # Format protocol filter
+        proto_c = ctypes.c_char_p((proto if proto else "").encode('utf-8'))
+        
+        # Format port filter
+        listen_addr = f"/ip4/127.0.0.1/tcp/{port}" if port is not None else ""
+        listen_addr_c = ctypes.c_char_p(listen_addr.encode('utf-8'))
+        
+        # Format peer ID filter
+        peer_id_c = ctypes.c_char_p((peer_id if peer_id else "").encode('utf-8'))
+        
+        result = self._lib.P2PClose(repo_path, proto_c, listen_addr_c, peer_id_c)
+        return result
+
+    def close_tcp_forwarding_connection(self, proto: str = None, port: int = None, peer_id: str = None) -> int:
+        """
+        Close a specific TCP forwarding connection, optionally filtered by protocol, port, or peer ID.
+        
+        Args:
+            proto: Optional protocol filter
+            port: Optional port filter
+            peer_id: Optional peer ID filter
+            
+        Returns:
+            int: Number of forwarding connections closed
+        """
+        return self.close_tcp_connection(proto, port, peer_id)
+
+    def close_all_tcp_forwarding_connections(self) -> int:
+        """
+        Close all TCP forwarding connections.
+        
+        Returns:
+            int: Number of forwarding connections closed
+        """
+        return self.close_tcp_connection()
+
+    def create_tcp_listening_connection(self, proto: str, port: int) -> bool:
+        """
+        Equivalent to the `ipfs p2p listen` command.
+        Creates a libp2p service that forwards incoming connections to a local address.
+        
+        Args:
+            proto: Protocol string (will be prefixed with '/x/' if not already)
+            port: Local port to listen on
+            
+        Returns:
+            bool: True if the listening connection was created successfully
+        """
+        if not self._online:
+            raise RuntimeError("Cannot create TCP listener in offline mode")
+            
+        # Construct the target address
+        target_addr = f"/ip4/127.0.0.1/tcp/{port}"
+        
+        # Make sure p2p functionality is enabled
+        self._enable_p2p()
+            
+        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        proto_c = ctypes.c_char_p(proto.encode('utf-8'))
+        target_addr_c = ctypes.c_char_p(target_addr.encode('utf-8'))
+        
+        # Define function signature if not already defined
+        if not hasattr(self._lib, 'P2PListen'):
+            self._lib.P2PListen.argtypes = [
+                ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p
+            ]
+            self._lib.P2PListen.restype = ctypes.c_int
+        
+        result = self._lib.P2PListen(repo_path, proto_c, target_addr_c)
+        return result > 0
+
+    def close_tcp_listening_connection(self, proto: str = None, port: int = None) -> int:
+        """
+        Close a specific TCP listening connection, optionally filtered by protocol or port.
+        
+        Args:
+            proto: Optional protocol filter
+            port: Optional port filter
+            
+        Returns:
+            int: Number of listening connections closed
+        """
+        return self.close_tcp_connection(proto, port)
+
+    def close_all_tcp_listening_connections(self) -> int:
+        """
+        Close all TCP listening connections.
+        
+        Returns:
+            int: Number of listening connections closed
+        """
+        return self.close_tcp_connection()
+        
+    def list_tcp_connections(self) -> Dict[str, List[Dict[str, str]]]:
+        """
+        List all active TCP p2p connections.
+        
+        Returns:
+            Dict[str, List[Dict[str, str]]]: Dictionary containing lists of local listeners and remote streams
+        """
+        
+        # Get the listeners and streams
+        listeners, streams = self.list_listeners()
+        
+        # Convert to dictionary format
+        result = {
+            "LocalListeners": [listener.__dict__ for listener in listeners],
+            "RemoteStreams": [stream.__dict__ for stream in streams]
+        }
+        
+        return result
+        
