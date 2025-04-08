@@ -120,7 +120,7 @@ def run_server():
     server_thread.start()
     
     # Create a node listener
-    success = node.open_listener(protocol, f"/ip4/127.0.0.1/tcp/{port}")
+    success = node.tcp.open_listener(protocol, f"/ip4/127.0.0.1/tcp/{port}")
     if success:
         print(f"P2P listener created for protocol '{protocol}' -> /ip4/127.0.0.1/tcp/{port}")
     else:
@@ -136,7 +136,7 @@ def run_server():
         print("Shutting down...")
     finally:
         # Clean up
-        node.close_streams(protocol)
+        node.tcp.close_streams(protocol)
         node.close()
 
 
@@ -169,7 +169,7 @@ def run_client_node(server_peer_id):
     local_port = 9876
     
     # Create a node forwarding connection
-    success = node.open_sender(protocol, f"/ip4/127.0.0.1/tcp/{local_port}", server_peer_id)
+    success = node.tcp.open_sender(protocol, f"/ip4/127.0.0.1/tcp/{local_port}", server_peer_id)
     if success:
         print(f"P2P forwarding created: /ip4/127.0.0.1/tcp/{local_port} -> {server_peer_id} via {protocol}")
     else:

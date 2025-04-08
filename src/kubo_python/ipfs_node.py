@@ -11,13 +11,11 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
 from .lib import libkubo, c_str, from_c_str, ffi
-from .ipfs_p2p import NodeStreamMounting
+from .ipfs_p2p import NodeTcp
 from .ipfs_files import NodeFiles
 
-from cffi import FFI
-ffi = FFI()
 
-class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
+class IpfsNode(NodePubsub, NodeFiles):
     """
     Python wrapper for a Kubo IPFS node.
 
@@ -41,7 +39,6 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
         self._enable_pubsub = enable_pubsub
         self._subscriptions = {}  # Track active subscriptions by topic
         self._peer_id = None  # Will be set when connecting to the network
-
         # If no repo path is provided, create a temporary directory
         if self._repo_path is None:
             self._temp_dir = tempfile.TemporaryDirectory()
@@ -59,7 +56,10 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
         # Get the node ID if online
         if self._online:
             self._peer_id = self.get_node_id()
-
+        self._tcp = NodeTcp(self)
+    @property
+    def tcp(self)->NodeTcp:
+        return self._tcp
     def _run(self):
         pass
 

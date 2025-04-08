@@ -1,7 +1,7 @@
 import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
-# from ipfs_toolkit_generics import BaseTcp
+from ipfs_toolkit_generics import BaseTcp
 from .lib import libkubo, c_str, from_c_str, ffi
 
 
@@ -51,14 +51,16 @@ class P2PStream:
         return f"P2PStream(protocol={self.protocol}, origin={self.origin_address}, target={self.target_address})"
 
 
-class NodeStreamMounting():
+class NodeTcp(BaseTcp):
     """
     Provides P2P stream mounting functionality for IPFS nodes.
 
     Stream mounting allows you to expose local TCP services to the libp2p network
     and connect to remote TCP services exposed by other nodes.
     """
-
+    def __init__(self, node):
+        self._node = node
+        self._repo_path = self._node._repo_path
     def _enable_p2p(self) -> bool:
         """Enable p2p functionality in the IPFS configuration."""
 
