@@ -10,9 +10,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
-
+from .lib import libkubo, c_str, from_c_str, ffi
 from .ipfs_p2p import NodeStreamMounting
 from .ipfs_files import NodeFiles
+
+from cffi import FFI
+ffi = FFI()
+
 class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
     """
     Python wrapper for a Kubo IPFS node.
@@ -32,7 +36,6 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
             enable_pubsub: Whether to enable pubsub functionality.
         """
         self._temp_dir = None
-        self._lib = None
         self._repo_path = repo_path
         self._online = online
         self._enable_pubsub = enable_pubsub
@@ -44,13 +47,11 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
             self._temp_dir = tempfile.TemporaryDirectory()
             self._repo_path = self._temp_dir.name
 
-        # Load the shared library
-        self._load_library()
 
         # Initialize the repository if it doesn't exist
         if not os.path.exists(os.path.join(self._repo_path, "config")):
             self._init_repo()
-        self._lib.RunNode(ctypes.c_char_p(self._repo_path.encode('utf-8')))
+        libkubo.RunNode(c_str(self._repo_path.encode('utf-8')))
         # Enable pubsub if requested
         if self._enable_pubsub and self._online:
             self._enable_pubsub_config()
@@ -65,90 +66,10 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
     def _stop(self):
         pass
 
-    def _load_library(self):
-        """Load the Kubo shared library."""
-        # Determine library name based on platform
-        if platform.system() == 'Windows':
-            lib_name = 'libkubo.dll'
-        elif platform.system() == 'Darwin':
-            lib_name = 'libkubo.dylib'
-        else:
-            if "aarch64" == platform.machine():
-                lib_name = "libkubo_android_arm64.so"
-            else:
-                lib_name = 'libkubo_linux_x86_64.so'
-
-        # Get the absolute path to the library
-        lib_path = Path(__file__).parent / 'lib' / lib_name
-
-        # Load the library
-        try:
-            self._lib = ctypes.CDLL(str(lib_path))
-        except OSError as e:
-            raise RuntimeError(f"Failed to load Kubo library: {e}")
-
-        # Define function signatures
-        self._lib.RunNode.argtypes = [ctypes.c_char_p]
-        self._lib.RunNode.restype = ctypes.c_int
-        
-        self._lib.ReleaseNode.argtypes = [ctypes.c_char_p]
-        self._lib.ReleaseNode.restype = ctypes.c_int
-        
-        self._lib.CreateRepo.argtypes = [ctypes.c_char_p]
-        self._lib.CreateRepo.restype = ctypes.c_int
-
-        self._lib.AddFile.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-        self._lib.AddFile.restype = ctypes.c_char_p
-
-        self._lib.GetFile.argtypes = [
-            ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
-        self._lib.GetFile.restype = ctypes.c_int
-
-        self._lib.ConnectToPeer.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-        self._lib.ConnectToPeer.restype = ctypes.c_int
-
-        self._lib.FreeString.argtypes = [ctypes.c_char_p]
-        self._lib.FreeString.restype = None
-
-        # PubSub function signatures
-        self._lib.PubSubEnable.argtypes = [ctypes.c_char_p]
-        self._lib.PubSubEnable.restype = ctypes.c_int
-
-        self._lib.PubSubListTopics.argtypes = [ctypes.c_char_p]
-        self._lib.PubSubListTopics.restype = ctypes.c_char_p
-
-        self._lib.PubSubPublish.argtypes = [
-            ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_int]
-        self._lib.PubSubPublish.restype = ctypes.c_int
-
-        self._lib.PubSubSubscribe.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-        self._lib.PubSubSubscribe.restype = ctypes.c_longlong
-
-        self._lib.PubSubNextMessage.argtypes = [ctypes.c_longlong]
-        self._lib.PubSubNextMessage.restype = ctypes.c_char_p
-
-        self._lib.PubSubUnsubscribe.argtypes = [ctypes.c_longlong]
-        self._lib.PubSubUnsubscribe.restype = ctypes.c_int
-
-        self._lib.PubSubPeers.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
-        self._lib.PubSubPeers.restype = ctypes.c_char_p
-
-        # Test function
-        self._lib.TestGetString.argtypes = []
-        self._lib.TestGetString.restype = ctypes.c_char_p
-
-        # Node ID function signature
-        self._lib.GetNodeID.argtypes = [ctypes.c_char_p]
-        self._lib.GetNodeID.restype = ctypes.c_char_p
-
-        # Node cleanup function signature
-        self._lib.CleanupNode.argtypes = [ctypes.c_char_p]
-        self._lib.CleanupNode.restype = ctypes.c_int
-
     def _init_repo(self):
         """Initialize the IPFS repository."""
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        result = self._lib.CreateRepo(repo_path)
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        result = libkubo.CreateRepo(repo_path)
 
         if result < 0:
             raise RuntimeError(
@@ -170,10 +91,10 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
             raise RuntimeError("Cannot connect to peers in offline mode")
 
         try:
-            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-            peer_addr_c = ctypes.c_char_p(peer_addr.encode('utf-8'))
+            repo_path = c_str(self._repo_path.encode('utf-8'))
+            peer_addr_c = c_str(peer_addr.encode('utf-8'))
 
-            result = self._lib.ConnectToPeer(repo_path, peer_addr_c)
+            result = libkubo.ConnectToPeer(repo_path, peer_addr_c)
 
             return result == 0
         except Exception as e:
@@ -197,9 +118,9 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
         # Force cleanup of the node in Go
         if self._repo_path:
             try:
-                repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+                repo_path = c_str(self._repo_path.encode('utf-8'))
                 print("Cleaning up node...")
-                self._lib.CleanupNode(repo_path)
+                libkubo.CleanupNode(repo_path)
                 print(f"Node for repo {self._repo_path} explicitly cleaned up")
             except Exception as e:
                 print(f"Warning: Error cleaning up node: {e}")
@@ -223,12 +144,12 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
     def test_get_string(self) -> str:
         """Test function to check basic string passing from Go to Python"""
         try:
-            id_ptr = self._lib.TestGetString()
+            id_ptr = libkubo.TestGetString()
             if not id_ptr:
                 print("TEST: No string returned from TestGetString")
                 return ""
 
-            test_str = ctypes.string_at(id_ptr).decode('utf-8')
+            test_str = from_c_str(id_ptr)
             # print(f"TEST: String from Go: '{test_str}', length: {len(test_str)}")
             return test_str
         except Exception as e:
@@ -248,16 +169,16 @@ class IpfsNode(NodeStreamMounting, NodePubsub, NodeFiles):
 
         # try to get the node ID
         try:
-            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+            repo_path = c_str(self._repo_path.encode('utf-8'))
 
-            id_ptr = self._lib.GetNodeID(repo_path)
+            id_ptr = libkubo.GetNodeID(repo_path)
 
             if not id_ptr:
                 print("IPFS: NO ID_PTR")
                 return ""
 
             # Copy the string content
-            peer_id = ctypes.string_at(id_ptr).decode('utf-8')
+            peer_id = from_c_str(id_ptr)
 
             # Don't free the memory - let Go's finalizer handle it
             # The memory will be freed when Go's garbage collector runs

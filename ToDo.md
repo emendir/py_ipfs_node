@@ -10,6 +10,7 @@
 ## ipfs_node:
 - auto-generate IpfsNode._lib
 - implement ReleaseNode
+- IpfsNode.Tcp: cleanup close and listen methods
 
 ## Features
 - [x] P2P Stream Mounting implemented
