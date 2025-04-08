@@ -34,7 +34,7 @@ def subscriber_mode(repo_path: str, topic: str):
         print(f"Subscribing to topic: {topic}")
         
         # Subscribe to the topic with a callback
-        with node.pubsub_subscribe(topic) as subscription:
+        with node.pubsub.subscribe(topic) as subscription:
             print(f"Subscribed to {topic}")
             subscription.subscribe(message_callback)
             
@@ -61,14 +61,14 @@ def publisher_mode(repo_path: str, topic: str):
                     break
                 
                 # Publish the message
-                success = node.pubsub_publish(topic, message)
+                success = node.pubsub.publish(topic, message)
                 if success:
                     print(f"Message published to {topic}")
                 else:
                     print("Failed to publish message")
                     
                 # List peers for the topic
-                peers = node.pubsub_peers(topic)
+                peers = node.pubsub.peers(topic)
                 if peers:
                     print(f"Peers for topic {topic}: {', '.join(peers)}")
                 else:

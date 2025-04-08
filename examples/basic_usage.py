@@ -30,21 +30,21 @@ def main():
         with IpfsNode.ephemeral() as node:
             # Add a file to IPFS
             print(f"Adding file: {temp_file_path}")
-            file_cid = node.add_file(temp_file_path)
+            file_cid = node.files.add_file(temp_file_path)
             print(f"File added with CID: {file_cid}")
             
             # Add a string to IPFS
             content = "Hello, IPFS from Python!"
             print(f"Adding string: {content}")
-            str_cid = node.add_str(content)
+            str_cid = node.files.add_str(content)
             print(f"String added with CID: {str_cid}")
             
             # Retrieve the file content
-            retrieved_content = node.get_str(file_cid)
+            retrieved_content = node.files.get_str(file_cid)
             print(f"Retrieved content from file: {retrieved_content}")
             
             # Retrieve the string content
-            retrieved_str = node.get_str(str_cid)
+            retrieved_str = node.files.get_str(str_cid)
             print(f"Retrieved string: {retrieved_str}")
             
             # Try to connect to a public IPFS node

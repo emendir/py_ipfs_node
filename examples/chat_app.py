@@ -53,7 +53,7 @@ class ChatApp:
         
         # Subscribe to the control topic for room discovery
         self.control_topic = "chat-control"
-        self.control_subscription = self.node.pubsub_subscribe(self.control_topic)
+        self.control_subscription = self.node.pubsub.subscribe(self.control_topic)
         self.control_subscription.subscribe(self._handle_control_message)
         
         # Announce ourselves
@@ -69,7 +69,7 @@ class ChatApp:
         }
         
         # Publish announcement
-        self.node.pubsub_publish(self.control_topic, json.dumps(announcement))
+        self.node.pubsub.publish(self.control_topic, json.dumps(announcement))
         
     def join_room(self, room_name: str):
         """
@@ -84,7 +84,7 @@ class ChatApp:
             
         # Subscribe to the room's topic
         topic = f"chat-room-{room_name}"
-        subscription = self.node.pubsub_subscribe(topic)
+        subscription = self.node.pubsub.subscribe(topic)
         subscription.subscribe(self._handle_room_message)
         
         # Add to our list of rooms
@@ -103,8 +103,8 @@ class ChatApp:
         }
         
         # Publish to both the control topic and the room topic
-        self.node.pubsub_publish(self.control_topic, json.dumps(join_message))
-        self.node.pubsub_publish(topic, json.dumps({
+        self.node.pubsub.publish(self.control_topic, json.dumps(join_message))
+        self.node.pubsub.publish(topic, json.dumps({
             "type": "system",
             "content": f"{self.username} has joined the room",
             "timestamp": datetime.datetime.now().isoformat()
@@ -135,8 +135,8 @@ class ChatApp:
         }
         
         # Publish to both the control topic and the room topic
-        self.node.pubsub_publish(self.control_topic, json.dumps(leave_message))
-        self.node.pubsub_publish(room["topic"], json.dumps({
+        self.node.pubsub.publish(self.control_topic, json.dumps(leave_message))
+        self.node.pubsub.publish(room["topic"], json.dumps({
             "type": "system",
             "content": f"{self.username} has left the room",
             "timestamp": datetime.datetime.now().isoformat()
@@ -169,7 +169,7 @@ class ChatApp:
         
         # Publish to the room's topic
         topic = self.rooms[room_name]["topic"]
-        success = self.node.pubsub_publish(topic, json.dumps(message))
+        success = self.node.pubsub.publish(topic, json.dumps(message))
         
         return success
         
@@ -180,7 +180,7 @@ class ChatApp:
         else:
             print("Joined rooms:")
             for name, room in self.rooms.items():
-                peers = self.node.pubsub_peers(room["topic"])
+                peers = self.node.pubsub.peers(room["topic"])
                 print(f"- {name} ({len(peers)} peers)")
                 
     def list_peers(self, room_name: str = None):
@@ -196,7 +196,7 @@ class ChatApp:
                 return
                 
             topic = self.rooms[room_name]["topic"]
-            peers = self.node.pubsub_peers(topic)
+            peers = self.node.pubsub.peers(topic)
             print(f"Peers in room {room_name}:")
             for peer in peers:
                 print(f"- {peer}")
@@ -205,7 +205,7 @@ class ChatApp:
                 print("No peers found")
         else:
             # List all pubsub peers
-            peers = self.node.pubsub_peers()
+            peers = self.node.pubsub.list_peers()
             print(f"All connected peers:")
             for peer in peers:
                 print(f"- {peer}")

@@ -223,8 +223,11 @@ class IPFSSubscription:
 
 
 class NodePubsub:
-    # PubSub methods
-    def pubsub_subscribe(self, topic: str) -> IPFSSubscription:
+    def __init__(self, node):
+        self._node = node
+        self._repo_path = self._node._repo_path
+        self._subscriptions = {}  # Track active subscriptions by topic
+    def subscribe(self, topic: str) -> IPFSSubscription:
         """
         Subscribe to a pubsub topic.
 
@@ -234,10 +237,10 @@ class NodePubsub:
         Returns:
             IPFSSubscription: A subscription object for the topic.
         """
-        if not self._online:
+        if not self._node._online:
             raise RuntimeError("Cannot subscribe to topics in offline mode")
 
-        if not self._enable_pubsub:
+        if not self._node._enable_pubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Subscribe to the topic
@@ -258,7 +261,7 @@ class NodePubsub:
 
         return subscription
 
-    def pubsub_publish(self, topic: str, data: Union[str, bytes]) -> bool:
+    def publish(self, topic: str, data: Union[str, bytes]) -> bool:
         """
         Publish a message to a pubsub topic.
 
@@ -270,10 +273,10 @@ class NodePubsub:
         Returns:
             bool: True if the message was published successfully.
         """
-        if not self._online:
+        if not self._node._online:
             raise RuntimeError("Cannot publish to topics in offline mode")
 
-        if not self._enable_pubsub:
+        if not self._node._enable_pubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Convert string to bytes if needed
@@ -298,7 +301,7 @@ class NodePubsub:
 
         return result == 0
 
-    def pubsub_peers(self, topic: Optional[str] = None) -> List[str]:
+    def list_peers(self, topic: Optional[str] = None) -> List[str]:
         """
         List peers participating in pubsub.
 
@@ -308,10 +311,10 @@ class NodePubsub:
         Returns:
             List[str]: List of peer IDs.
         """
-        if not self._online:
+        if not self._node._online:
             raise RuntimeError("Cannot list peers in offline mode")
 
-        if not self._enable_pubsub:
+        if not self._node._enable_pubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Get the repository path
@@ -338,17 +341,17 @@ class NodePubsub:
         except json.JSONDecodeError:
             return []
 
-    def pubsub_topics(self) -> List[str]:
+    def list_topics(self) -> List[str]:
         """
         List subscribed pubsub topics.
 
         Returns:
             List[str]: List of topic names.
         """
-        if not self._online:
+        if not self._node._online:
             raise RuntimeError("Cannot list topics in offline mode")
 
-        if not self._enable_pubsub:
+        if not self._node._enable_pubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Get the repository path
@@ -442,3 +445,14 @@ class NodePubsub:
             del self._subscriptions[topic]
 
         return result == 0
+    
+    def close(self):
+        # Close all active subscriptions
+        for topic, subscriptions in list(self._subscriptions.items()):
+            for sub in list(subscriptions):
+                try:
+                    sub.close()
+                except Exception as e:
+                    print(f"Warning: Error closing subscription: {e}")
+
+        self._subscriptions.clear()

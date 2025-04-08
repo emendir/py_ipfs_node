@@ -15,7 +15,7 @@ from .ipfs_p2p import NodeTcp
 from .ipfs_files import NodeFiles
 
 
-class IpfsNode(NodePubsub, NodeFiles):
+class IpfsNode:
     """
     Python wrapper for a Kubo IPFS node.
 
@@ -37,7 +37,6 @@ class IpfsNode(NodePubsub, NodeFiles):
         self._repo_path = repo_path
         self._online = online
         self._enable_pubsub = enable_pubsub
-        self._subscriptions = {}  # Track active subscriptions by topic
         self._peer_id = None  # Will be set when connecting to the network
         # If no repo path is provided, create a temporary directory
         if self._repo_path is None:
@@ -49,17 +48,26 @@ class IpfsNode(NodePubsub, NodeFiles):
         if not os.path.exists(os.path.join(self._repo_path, "config")):
             self._init_repo()
         libkubo.RunNode(c_str(self._repo_path.encode('utf-8')))
-        # Enable pubsub if requested
-        if self._enable_pubsub and self._online:
-            self._enable_pubsub_config()
 
         # Get the node ID if online
         if self._online:
             self._peer_id = self.get_node_id()
+        self._pubsub = NodePubsub(self)
         self._tcp = NodeTcp(self)
+        self._files = NodeFiles(self)
+        
+        # Enable pubsub if requested
+        if self._enable_pubsub and self._online:
+            self.pubsub._enable_pubsub_config()
     @property
     def tcp(self)->NodeTcp:
         return self._tcp
+    @property
+    def pubsub(self)->NodePubsub:
+        return self._pubsub
+    @property
+    def files(self)->NodePubsub:
+        return self._files
     def _run(self):
         pass
 
@@ -105,16 +113,9 @@ class IpfsNode(NodePubsub, NodeFiles):
 
     def close(self):
         """Close the IPFS node and clean up resources."""
-        # Close all active subscriptions
-        for topic, subscriptions in list(self._subscriptions.items()):
-            for sub in list(subscriptions):
-                try:
-                    sub.close()
-                except Exception as e:
-                    print(f"Warning: Error closing subscription: {e}")
-
-        self._subscriptions.clear()
-
+        self._pubsub.close()
+        self._tcp.close()
+        self._files.close()
         # Force cleanup of the node in Go
         if self._repo_path:
             try:
@@ -212,3 +213,4 @@ class IpfsNode(NodePubsub, NodeFiles):
             IpfsNode: A new IPFS node instance with a temporary repository.
         """
         return cls(None, online, enable_pubsub)
+    

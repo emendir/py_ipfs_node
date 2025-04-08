@@ -12,6 +12,9 @@ from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, 
 from .lib import libkubo, c_str, from_c_str, ffi
 
 class NodeFiles:
+    def __init__(self, node):
+        self._node = node
+        self._repo_path = self._node._repo_path
 
     def add_bytes(self, data: bytes, filename: Optional[str] = None) -> str:
         """
@@ -77,7 +80,7 @@ class NodeFiles:
             temp_file.close()
 
             # Get the file from IPFS
-            success = self.get_file(cid, temp_file_path)
+            success = self.download(cid, temp_file_path)
             if not success:
                 raise RuntimeError(f"Failed to retrieve data for CID: {cid}")
 
@@ -163,7 +166,7 @@ class NodeFiles:
         # The underlying Go implementation handles directories
         return self.add_file(dir_path)
 
-    def get_file(self, cid: str, dest_path: str) -> bool:
+    def download(self, cid: str, dest_path: str) -> bool:
         """
         Retrieve a file from IPFS by its CID.
 
@@ -185,3 +188,5 @@ class NodeFiles:
         except Exception as e:
             # Handle any exceptions during the process
             raise RuntimeError(f"Error retrieving file from IPFS: {e}")
+    def close(self):
+        pass
