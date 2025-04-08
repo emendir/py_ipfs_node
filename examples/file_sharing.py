@@ -25,12 +25,12 @@ def add_files(node, path, recursive=True):
     path = Path(path)
     if path.is_dir() and recursive:
         print(f"Adding directory: {path}")
-        cid = node.add_directory(str(path))
+        cid = node.files.add_directory(str(path))
         print(f"Directory added with CID: {cid}")
         return cid
     elif path.is_file():
         print(f"Adding file: {path}")
-        cid = node.add_file(str(path))
+        cid = node.files.add_file(str(path))
         print(f"File added with CID: {cid}")
         return cid
     else:
@@ -40,7 +40,7 @@ def add_files(node, path, recursive=True):
 def retrieve_file(node, cid, output_path):
     """Retrieve a file from IPFS and save it to the specified path."""
     print(f"Retrieving file with CID: {cid}")
-    success = node.get_file(cid, output_path)
+    success = node.files.download(cid, output_path)
     if success:
         print(f"File retrieved successfully to: {output_path}")
     else:

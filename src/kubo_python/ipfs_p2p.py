@@ -289,3 +289,5 @@ class NodeTcp(BaseTcp):
             streams.append(stream)
 
         return listeners, streams
+    def close(self):
+        pass

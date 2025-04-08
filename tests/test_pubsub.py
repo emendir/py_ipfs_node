@@ -45,7 +45,7 @@ def publisher_thread():
                     print("Failed to connect to subscriber")
                     
                 # Find a peer to connect to
-                peers = node.pubsub_peers()
+                peers = node.pubsub.list_peers()
                 print(f"Available pubsub peers: {peers}")
             except Exception as e:
                 print(f"Error connecting to peer: {e}")
@@ -56,12 +56,12 @@ def publisher_thread():
         for i in range(3):
             message = f"Test message {i}"
             print(f"Publishing: {message}")
-            success = node.pubsub_publish("test-topic", message)
+            success = node.pubsub.publish("test-topic", message)
             print(f"Publish success: {success}")
             
             # Print topics
             try:
-                topics = node.pubsub_topics()
+                topics = node.pubsub.list_topics()
                 print(f"Active topics: {topics}")
             except Exception as e:
                 print(f"Error getting topics: {e}")
@@ -90,7 +90,7 @@ def subscriber_thread():
         print(f"Subscriber node created with ID: {subscriber_id}")
         
         # Subscribe to the topic
-        subscription = node.pubsub_subscribe("test-topic")
+        subscription = node.pubsub.subscribe("test-topic")
         print(f"Subscribed to test-topic")
         subscription.subscribe(message_callback)
         

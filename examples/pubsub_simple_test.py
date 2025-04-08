@@ -39,7 +39,7 @@ def main():
             print(f"IPFS node created with ID: {node.peer_id}")
             
             # Subscribe to the test topic
-            with node.pubsub_subscribe("test-topic") as subscription:
+            with node.pubsub.subscribe("test-topic") as subscription:
                 print(f"Subscribed to test-topic")
                 
                 # Set up the callback
@@ -52,7 +52,7 @@ def main():
                 for i in range(3):
                     message = f"Test message {i}"
                     print(f"Publishing: {message}")
-                    success = node.pubsub_publish("test-topic", message)
+                    success = node.pubsub.publish("test-topic", message)
                     print(f"Publish success: {success}")
                     
                     # Wait a moment
