@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 import base64
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from .lib import libkubo, c_str, from_c_str, ffi
 
 
 @dataclass
@@ -181,6 +182,7 @@ class IPFSSubscription:
             try:
                 msg = self.next_message(timeout=0.5)
                 if msg:
+                    print(type(msg))
                     callback(msg)
             except Exception as e:
                 # Just log the error and continue
@@ -239,10 +241,10 @@ class NodePubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Subscribe to the topic
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        topic_c = ctypes.c_char_p(topic.encode('utf-8'))
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        topic_c = c_str(topic.encode('utf-8'))
 
-        sub_id = self._lib.PubSubSubscribe(repo_path, topic_c)
+        sub_id = libkubo.PubSubSubscribe(repo_path, topic_c)
         if sub_id < 0:
             raise RuntimeError(f"Failed to subscribe to topic: {topic}")
 
@@ -281,19 +283,17 @@ class NodePubsub:
             data_bytes = data
 
         # Get the repository path
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        topic_c = ctypes.c_char_p(topic.encode('utf-8'))
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        topic_c = c_str(topic.encode('utf-8'))
 
         # Create a data buffer for the message
         data_len = len(data_bytes)
-        data_buffer = ctypes.create_string_buffer(data_bytes, data_len)
-
-        # Publish the message
-        result = self._lib.PubSubPublish(
+        data_buffer = ffi.new("char[]", data_bytes)
+        result = libkubo.PubSubPublish(
             repo_path,
             topic_c,
-            ctypes.cast(data_buffer, ctypes.c_void_p),
-            ctypes.c_int(data_len)
+            ffi.cast("void *", data_buffer),
+            len(data_bytes)
         )
 
         return result == 0
@@ -315,20 +315,20 @@ class NodePubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Get the repository path
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        topic_c = ctypes.c_char_p((topic or "").encode('utf-8'))
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        topic_c = c_str((topic or "").encode('utf-8'))
 
         # Get peers
-        peers_ptr = self._lib.PubSubPeers(repo_path, topic_c)
+        peers_ptr = libkubo.PubSubPeers(repo_path, topic_c)
         if not peers_ptr:
             return []
 
         # Copy the string content before freeing the pointer
-        json_data = ctypes.string_at(peers_ptr).decode('utf-8')
+        json_data = from_c_str(peers_ptr)
 
         try:
             # Free the memory allocated in Go
-            self._lib.FreeString(peers_ptr)
+            libkubo.FreeString(peers_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
 
@@ -352,19 +352,19 @@ class NodePubsub:
             raise RuntimeError("PubSub is not enabled for this node")
 
         # Get the repository path
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
+        repo_path = c_str(self._repo_path.encode('utf-8'))
 
         # Get topics
-        topics_ptr = self._lib.PubSubListTopics(repo_path)
+        topics_ptr = libkubo.PubSubListTopics(repo_path)
         if not topics_ptr:
             return []
 
         # Copy the string content before freeing the pointer
-        json_data = ctypes.string_at(topics_ptr).decode('utf-8')
+        json_data = from_c_str(topics_ptr)
 
         try:
             # Free the memory allocated in Go
-            self._lib.FreeString(topics_ptr)
+            libkubo.FreeString(topics_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
 
@@ -376,8 +376,8 @@ class NodePubsub:
             
     def _enable_pubsub_config(self):
         """Enable pubsub in the IPFS configuration."""
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        result = self._lib.PubSubEnable(repo_path)
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        result = libkubo.PubSubEnable(repo_path)
 
         if result < 0:
             raise RuntimeError(f"Failed to enable pubsub: {result}")
@@ -392,19 +392,19 @@ class NodePubsub:
         Returns:
             IPFSMessage or None: The next message, or None if no message is available.
         """
-        sub_id = ctypes.c_longlong(subscription_id)
+        # sub_id = ctypes.c_longlong(subscription_id)
 
         # Get message as JSON string
-        message_ptr = self._lib.PubSubNextMessage(sub_id)
+        message_ptr = libkubo.PubSubNextMessage(subscription_id)
         if not message_ptr:
             return None
 
         # Copy the string content before freeing the pointer
-        json_data = ctypes.string_at(message_ptr).decode('utf-8')
+        json_data = from_c_str(message_ptr)
 
         try:
             # Free the memory allocated in Go
-            self._lib.FreeString(message_ptr)
+            libkubo.FreeString(message_ptr)
         except Exception as e:
             print(f"Warning: Failed to free memory: {e}")
 
@@ -425,8 +425,8 @@ class NodePubsub:
         Returns:
             bool: True if successfully unsubscribed.
         """
-        sub_id = ctypes.c_longlong(subscription_id)
-        result = self._lib.PubSubUnsubscribe(sub_id)
+        # sub_id = ctypes.c_longlong(subscription_id)
+        result = libkubo.PubSubUnsubscribe(subscription_id)
 
         # Clean up local subscription tracking
         to_remove = []

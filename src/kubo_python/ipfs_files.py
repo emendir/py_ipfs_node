@@ -9,6 +9,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
+from .lib import libkubo, c_str, from_c_str, ffi
 
 class NodeFiles:
 
@@ -120,22 +121,21 @@ class NodeFiles:
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
-        repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-        file_path_c = ctypes.c_char_p(
-            os.path.abspath(file_path).encode('utf-8'))
+        repo_path = c_str(self._repo_path.encode('utf-8'))
+        file_path_c = c_str(         os.path.abspath(file_path).encode('utf-8'))
 
         try:
-            cid_ptr = self._lib.AddFile(repo_path, file_path_c)
+            cid_ptr = libkubo.AddFile(repo_path, file_path_c)
             if not cid_ptr:
                 raise RuntimeError("Failed to add file to IPFS")
 
             # Copy the string content before freeing the pointer
-            cid = ctypes.string_at(cid_ptr).decode('utf-8')
+            cid = from_c_str(cid_ptr)
 
             # Store the memory freeing operation in a separate try block
             try:
                 # Free the memory allocated by C.CString in Go
-                self._lib.FreeString(cid_ptr)
+                libkubo.FreeString(cid_ptr)
             except Exception as e:
                 print(f"Warning: Failed to free memory: {e}")
 
@@ -175,12 +175,11 @@ class NodeFiles:
             bool: True if the file was successfully retrieved, False otherwise.
         """
         try:
-            repo_path = ctypes.c_char_p(self._repo_path.encode('utf-8'))
-            cid_c = ctypes.c_char_p(cid.encode('utf-8'))
-            dest_path_c = ctypes.c_char_p(
-                os.path.abspath(dest_path).encode('utf-8'))
+            repo_path = c_str(self._repo_path.encode('utf-8'))
+            cid_c = c_str(cid.encode('utf-8'))
+            dest_path_c = c_str(os.path.abspath(dest_path).encode('utf-8'))
 
-            result = self._lib.GetFile(repo_path, cid_c, dest_path_c)
+            result = libkubo.GetFile(repo_path, cid_c, dest_path_c)
 
             return result == 0
         except Exception as e:

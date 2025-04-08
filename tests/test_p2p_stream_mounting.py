@@ -45,7 +45,7 @@ def run():
     start_echo_server(echo_port)
 
     # Listen for incoming P2P connections on the server
-    assert server_node.listen(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
+    assert server_node.open_listener(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
     print(f"[SERVER] Listening for P2P on protocol {protocol}")
 
     # Setup client node
@@ -59,7 +59,7 @@ def run():
 
     # Forward P2P traffic from client to server
     client_port = 8888
-    assert client_node.forward(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
+    assert client_node.open_sender(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
     print(f"[CLIENT] Forwarding {protocol} -> server {server_node.peer_id}")
 
     # Allow some time for things to set up

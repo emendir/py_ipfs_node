@@ -132,8 +132,6 @@ func RunNode(repoPath *C.char) C.int {
 }
 
 // ReleaseNode decreases the reference count for a node, closing it if no references remain
-//
-//export ReleaseNode
 func ReleaseNode(repoPath string) {
 	activeNodesMutex.Lock()
 	defer activeNodesMutex.Unlock()

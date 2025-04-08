@@ -180,10 +180,6 @@ extern int PubSubCloseAllSubscriptions();
 extern int CreateRepo(char* repoPath);
 extern int RunNode(char* repoPath);
 
-// ReleaseNode decreases the reference count for a node, closing it if no references remain
-//
-extern void ReleaseNode(GoString repoPath);
-
 // PubSubEnable enables pubsub on an IPFS node configuration
 //
 extern int PubSubEnable(char* repoPath);
