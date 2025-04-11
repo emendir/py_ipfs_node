@@ -76,7 +76,11 @@ class IPFSMessage:
             data_str = f"0x{self.data.hex()}"
 
         return f"IPFSMessage(from={self.from_peer}, topic={self.topic_id}, data={data_str})"
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
+    def __setitem__(self, key: str, value: Any) -> None:
+        setattr(self, key, value)
 
 class IPFSSubscription:
     """
@@ -196,7 +200,7 @@ class IPFSSubscription:
             self._callback_thread = None
             self._stop_event.clear()
 
-    def subscribe(self, callback: Callable[[IPFSMessage], None]) -> None:
+    def subscribe(self, callback: Callable[[IPFSMessage], None]=None) -> None:
         """
         Set a callback to be called for each incoming message.
 
@@ -220,14 +224,15 @@ class IPFSSubscription:
             daemon=True
         )
         self._callback_thread.start()
-
+    def terminate(self, *args, **kwargs):
+        return self.close()
 
 class NodePubsub:
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
         self._subscriptions = {}  # Track active subscriptions by topic
-    def subscribe(self, topic: str) -> IPFSSubscription:
+    def subscribe(self, topic: str, callback: Callable[[IPFSMessage], None]|None=None) -> IPFSSubscription:
         """
         Subscribe to a pubsub topic.
 
@@ -258,7 +263,10 @@ class NodePubsub:
         if topic not in self._subscriptions:
             self._subscriptions[topic] = set()
         self._subscriptions[topic].add(subscription)
-
+        
+        if callback:
+            subscription.subscribe(callback)
+        
         return subscription
 
     def publish(self, topic: str, data: Union[str, bytes]) -> bool:
