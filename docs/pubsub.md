@@ -83,15 +83,15 @@ node.pubsub.publish("my-topic", b"\x00\x01\x02\x03")
 
 ```python
 # List subscribed topics
-topics = node.pubsub.topics()
+topics = node.pubsub.list_topics()
 print(f"Subscribed topics: {topics}")
 
 # List peers participating in pubsub (all topics)
-peers = node.pubsub.peers()
+peers = node.pubsub.list_peers()
 print(f"Pubsub peers: {peers}")
 
 # List peers for a specific topic
-topic_peers = node.pubsub.peers("my-topic")
+topic_peers = node.pubsub.list_peers("my-topic")
 print(f"Peers in 'my-topic': {topic_peers}")
 ```
 
