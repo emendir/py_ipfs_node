@@ -13,6 +13,8 @@
 - IpfsNode.Tcp: cleanup close and listen methods
 
 ## Features
+- [x] PubSub
 - [x] P2P Stream Mounting implemented
+- [ ] peer management
 - [ ] Key management
 - [ ] Config management

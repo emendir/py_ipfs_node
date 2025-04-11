@@ -110,8 +110,8 @@ setup(
     install_requires=[
         'cffi>=1.15.0',
     ],
-    author="Your Name",
-    author_email="your.email@example.com",
+    author="Emendir",
+    author_email="",
     description="Python bindings for Kubo (Go-IPFS)",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

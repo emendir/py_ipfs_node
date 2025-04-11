@@ -30,7 +30,7 @@ ephemeral_node = IpfsNode.ephemeral(enable_pubsub=True)
 To subscribe to a topic, use the `pubsub_subscribe` method:
 
 ```python
-subscription = node.pubsub_subscribe("my-topic")
+subscription = node.pubsub.subscribe("my-topic")
 ```
 
 This returns an `IPFSSubscription` object that you can use to receive messages.
@@ -73,25 +73,25 @@ To publish a message to a topic:
 
 ```python
 # Publish a string (will be UTF-8 encoded)
-node.pubsub_publish("my-topic", "Hello, world!")
+node.pubsub.publish("my-topic", "Hello, world!")
 
 # Publish binary data
-node.pubsub_publish("my-topic", b"\x00\x01\x02\x03")
+node.pubsub.publish("my-topic", b"\x00\x01\x02\x03")
 ```
 
 ### Listing Topics and Peers
 
 ```python
 # List subscribed topics
-topics = node.pubsub_topics()
+topics = node.pubsub.topics()
 print(f"Subscribed topics: {topics}")
 
 # List peers participating in pubsub (all topics)
-peers = node.pubsub_peers()
+peers = node.pubsub.peers()
 print(f"Pubsub peers: {peers}")
 
 # List peers for a specific topic
-topic_peers = node.pubsub_peers("my-topic")
+topic_peers = node.pubsub.peers("my-topic")
 print(f"Peers in 'my-topic': {topic_peers}")
 ```
 
@@ -102,7 +102,7 @@ print(f"Peers in 'my-topic': {topic_peers}")
 subscription.close()
 
 # Or using a context manager
-with node.pubsub_subscribe("my-topic") as subscription:
+with node.pubsub.subscribe("my-topic") as subscription:
     # Use subscription here
     pass  # Automatically closed when the block exits
 ```

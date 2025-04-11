@@ -13,7 +13,7 @@ from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
 from .lib import libkubo, c_str, from_c_str, ffi
 from .ipfs_p2p import NodeTcp
 from .ipfs_files import NodeFiles
-
+from .ipfs_peers import NodePeers
 
 class IpfsNode:
     """
@@ -55,6 +55,7 @@ class IpfsNode:
         self._pubsub = NodePubsub(self)
         self._tcp = NodeTcp(self)
         self._files = NodeFiles(self)
+        self._peers = NodePeers(self)
         
         # Enable pubsub if requested
         if self._enable_pubsub and self._online:
@@ -68,6 +69,9 @@ class IpfsNode:
     @property
     def files(self)->NodeFiles:
         return self._files
+    @property
+    def peers (self)->NodePeers:
+        return self._peers
     def _run(self):
         pass
 
