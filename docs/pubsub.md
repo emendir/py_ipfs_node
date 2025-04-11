@@ -140,5 +140,5 @@ See the `examples/chat_app.py` script for a complete example of building a chat 
 - PubSub requires the IPFS node to be online (`online=True`).
 - Messages are not persisted - only online peers receive the messages.
 - Peers need to be connected to the IPFS network to participate.
-- For better reliability, you may need to manually connect to specific peers using `node.connect_to_peer()`.
+- For better reliability, you may need to manually connect to specific peers using `node.peers.connect()`.
 - Large messages may be fragmented or dropped by the network.

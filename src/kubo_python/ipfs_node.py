@@ -42,11 +42,13 @@ class IpfsNode:
         if self._repo_path is None:
             self._temp_dir = tempfile.TemporaryDirectory()
             self._repo_path = self._temp_dir.name
-
+            
 
         # Initialize the repository if it doesn't exist
         if not os.path.exists(os.path.join(self._repo_path, "config")):
             self._init_repo()
+        else:
+            print("Loading existing IPFS repo")
         libkubo.RunNode(c_str(self._repo_path.encode('utf-8')))
 
         # Get the node ID if online
@@ -89,29 +91,6 @@ class IpfsNode:
         # print(f"Initalised repo at: {repo_path}")
 
 
-    def connect_to_peer(self, peer_addr: str) -> bool:
-        """
-        Connect to an IPFS peer.
-
-        Args:
-            peer_addr: Multiaddress of the peer to connect to.
-
-        Returns:
-            bool: True if successfully connected, False otherwise.
-        """
-        if not self._online:
-            raise RuntimeError("Cannot connect to peers in offline mode")
-
-        try:
-            repo_path = c_str(self._repo_path.encode('utf-8'))
-            peer_addr_c = c_str(peer_addr.encode('utf-8'))
-
-            result = libkubo.ConnectToPeer(repo_path, peer_addr_c)
-
-            return result == 0
-        except Exception as e:
-            # Handle any exceptions during the process
-            raise RuntimeError(f"Error connecting to peer: {e}")
 
 
 
@@ -144,7 +123,8 @@ class IpfsNode:
         self.close()
 
 
-
+    def _ipfs_host_ip(self,):
+        return "127.0.0.1"
 
     def test_get_string(self) -> str:
         """Test function to check basic string passing from Go to Python"""

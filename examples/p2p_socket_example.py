@@ -158,7 +158,7 @@ def run_client_node(server_peer_id):
     target_multiaddr = f"/node/{server_peer_id}"
     print(f"Connecting to peer: {target_multiaddr}")
     try:
-        node.connect_to_peer(target_multiaddr)
+        node.peers.connect(target_multiaddr)
         print("Connected to peer")
     except Exception as e:
         print(f"Warning: Could not directly connect to peer: {e}")
