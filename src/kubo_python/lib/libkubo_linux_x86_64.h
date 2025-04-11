@@ -141,7 +141,16 @@ extern int P2PCloseAllListeners(char* repoPath);
 extern int P2PCloseAllForwards(char* repoPath);
 
 // ConnectToPeer connects to a peer
+//
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
+
+// ListPeers connects to a peer
+//
+extern char* ListPeers(char* repoPath);
+
+// FindPeer connects to a peer
+//
+extern char* FindPeer(char* repoPath, char* peerAddr, int timeOut);
 
 // PubSubListTopics lists the topics the node is subscribed to
 //

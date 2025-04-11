@@ -38,7 +38,7 @@ def publisher_thread():
         if subscriber_addr:
             print(f"Connecting to subscriber: {subscriber_addr}")
             try:
-                success = node.connect_to_peer(subscriber_addr)
+                success = node.peers.connect(subscriber_addr)
                 if success:
                     print("Successfully connected to subscriber")
                 else:

@@ -52,7 +52,7 @@ def main():
                 print("Connecting to public IPFS node...")
                 # ipfs.io multiaddress
                 peer_addr = "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN"
-                success = node.connect_to_peer(peer_addr)
+                success = node.peers.connect(peer_addr)
                 print(f"Connection {'successful' if success else 'failed'}")
             except Exception as e:
                 print(f"Error connecting to peer: {e}")

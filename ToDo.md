@@ -5,7 +5,7 @@
 
 ## libkubo
 - CleanupNode: wait till IPFS node is fully shutdown
-
+- SearchForPeer: make events work, so that we can return as soon as peer is found instead of waiting for end of timeout
 
 ## ipfs_node:
 - auto-generate IpfsNode._lib

@@ -53,7 +53,7 @@ def run():
 
     # Optionally, attempt direct connection
     try:
-        client_node.connect_to_peer(f"/p2p/{server_node.peer_id}")
+        client_node.peers.connect(f"/p2p/{server_node.peer_id}")
     except Exception as e:
         print(f"[CLIENT] Could not directly connect: {e}")
 
