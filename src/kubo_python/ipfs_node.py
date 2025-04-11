@@ -66,7 +66,7 @@ class IpfsNode:
     def pubsub(self)->NodePubsub:
         return self._pubsub
     @property
-    def files(self)->NodePubsub:
+    def files(self)->NodeFiles:
         return self._files
     def _run(self):
         pass
