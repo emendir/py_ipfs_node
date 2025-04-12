@@ -31,8 +31,8 @@ def test_list_peers():
     print("List peers", success)
 def test_cleanup():
     # Clean up
-    pytest.node_1.close()
-    pytest.node_2.close()
+    pytest.node_1.terminate()
+    pytest.node_2.terminate()
 def run():
     test_preparations()
     test_findpeer()

@@ -207,6 +207,9 @@ func FindPeer(repoPath, peerAddr *C.char, timeOut C.int) *C.char {
 			return C.CString("[]") // Return empty JSON array
 		}
 		multi_addresses = multi_addresses2
+	}else{
+		log.Printf("DEBUG: finding peer: found peer immediately\n")
+		
 	}
 	
 	

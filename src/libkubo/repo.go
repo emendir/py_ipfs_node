@@ -21,15 +21,15 @@ import (
 )
 
 func init() {
-	// f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	// if err == nil {
-	// 	log.SetOutput(f)
-	// 	log.SetPrefix("IPFS: ")
-	// 	log.Println("DEBUG: Logging to file now")
-	// } else {
-	// 	// Optional fallback
-	// 	log.Printf("Failed to open log file: %v", err)
-	// }
+	f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err == nil {
+		log.SetOutput(f)
+		log.SetPrefix("IPFS: ")
+		log.Println("DEBUG: Logging to file now")
+	} else {
+		// Optional fallback
+		log.Printf("Failed to open log file: %v", err)
+	}
 }
 
 var plugins *loader.PluginLoader
