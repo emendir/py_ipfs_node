@@ -101,7 +101,7 @@ pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
     name="kubo-python",
-    version="0.1.1",
+    version="0.1.3",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
