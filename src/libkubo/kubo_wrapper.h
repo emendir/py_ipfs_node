@@ -100,8 +100,8 @@ extern char* AddFile(char* repoPath, char* filePath);
 // FreeString is a no-op for now - we'll let Go's garbage collection handle the memory
 extern void FreeString(char* str);
 
-// GetFile retrieves a file from IPFS
-extern int GetFile(char* repoPath, char* cidStr, char* destPath);
+// Download retrieves a file from IPFS
+extern int Download(char* repoPath, char* cidStr, char* destPath);
 
 // ConnectToPeer connects to a peer
 extern int ConnectToPeer(char* repoPath, char* peerAddr);

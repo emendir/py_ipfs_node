@@ -81,9 +81,9 @@ def run():
 
     # Clean up
     # server_node.tcp.close_streams(protocol)
-    server_node.close()
+    server_node.terminate()
     # client_node.tcp.close_streams(protocol)
-    client_node.close()
+    client_node.terminate()
     print("[TEST] Test passed and cleaned up successfully.")
 
 

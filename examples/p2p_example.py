@@ -126,7 +126,7 @@ def main():
             print(f"Skipped P2P connection for protocol: {args.protocol}")
         
         # Close the IPFS node
-        node.close()
+        node.terminate()
 
 if __name__ == "__main__":
     main()

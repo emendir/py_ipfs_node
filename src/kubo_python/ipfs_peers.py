@@ -17,7 +17,6 @@ class NodePeers(BasePeers):
         self._node = node
         self._repo_path = self._node._repo_path
     def find(self, peer_id:str, timeout=DEF_FIND_TIMEOUT)->list[str]:
-        print("Finding...")
         data = from_c_str(
             libkubo.FindPeer(c_str(self._repo_path), c_str(peer_id), timeout), 
         )
@@ -66,3 +65,7 @@ class NodePeers(BasePeers):
     def is_peer_connected(self, peer_id:str, *args, **kwargs):
         #TODO: replace with ping
         return peer_id in self.list_ids()
+    def terminate(self):
+        pass
+    def __del__(self):
+        self.terminate()

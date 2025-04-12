@@ -125,7 +125,7 @@ def run_server():
         print(f"P2P listener created for protocol '{protocol}' -> /ip4/127.0.0.1/tcp/{port}")
     else:
         print(f"Failed to create P2P listener")
-        node.close()
+        node.terminate()
         return
     
     try:
@@ -137,7 +137,7 @@ def run_server():
     finally:
         # Clean up
         # node.tcp.close_streams(protocol)
-        node.close()
+        node.terminate()
 
 
 def run_client_node(server_peer_id):
@@ -174,7 +174,7 @@ def run_client_node(server_peer_id):
         print(f"P2P forwarding created: /ip4/127.0.0.1/tcp/{local_port} -> {server_peer_id} via {protocol}")
     else:
         print(f"Failed to create P2P forwarding")
-        node.close()
+        node.terminate()
         return
     
     try:
@@ -194,7 +194,7 @@ def run_client_node(server_peer_id):
         # Clean up
         print("Closing P2P connection...")
         node.close(protocol)
-        node.close()
+        node.terminate()
 
 
 def main():

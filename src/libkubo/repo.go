@@ -5,7 +5,7 @@ import "C"
 
 import (
 	"context"
-	// "encoding/json"
+	"encoding/json"
 	iface "github.com/ipfs/boxo/coreiface"
 	"github.com/ipfs/kubo/config"
 	"github.com/ipfs/kubo/core"
@@ -272,12 +272,11 @@ func TestGetString() *C.char {
 //export GetNodeID
 func GetNodeID(repoPath *C.char) *C.char {
 
-	ctx := context.Background()
 
 	path := C.GoString(repoPath)
 
 	// Spawn a node
-	api, _, err := AcquireNode(path)
+	_, node, err := AcquireNode(path)
 	if err != nil {
 		log.Printf("Error spawning node: %s\n", err)
 		log.Println("Error spawning node:")
@@ -287,16 +286,41 @@ func GetNodeID(repoPath *C.char) *C.char {
 	defer ReleaseNode(path)
 
 	// Get the node ID
-	id, err := api.Key().Self(ctx)
+	id := node.Identity.String()
+	// log.Println("Got Node ID")
+	// log.Println(id.ID().String())
+
+	return C.CString(id)
+}
+
+// GetNodeMultiAddrs gets the ID of the IPFS node
+//
+//export GetNodeMultiAddrs
+func GetNodeMultiAddrs(repoPath *C.char) *C.char {
+
+
+	path := C.GoString(repoPath)
+
+	// Spawn a node
+	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error getting node ID: %s\n", err)
-		log.Println("Error  getting node ID:")
+		log.Printf("Error spawning node: %s\n", err)
+		log.Println("Error spawning node:")
+
 		return C.CString("")
 	}
-	log.Println("Got Node ID")
-	log.Println(id.ID().String())
+	defer ReleaseNode(path)
 
-	return C.CString(id.ID().String())
+	// Get the node ID
+	addresses := node.PeerHost.Addrs()
+	// Convert to JSON
+	jsonData, err := json.Marshal(addresses)
+	if err != nil {
+		log.Printf("ERROR marshaling Node Addrs data: %v\n", err)
+		return C.CString("")
+	}
+
+	return C.CString(string(jsonData))
 }
 
 // CleanupNode explicitly releases a node by path
