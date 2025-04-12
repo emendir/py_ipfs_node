@@ -1,3 +1,4 @@
+import pip
 from setuptools import setup, find_packages, Extension
 import subprocess
 import os
@@ -7,14 +8,15 @@ from setuptools.command.build_py import build_py
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 
+PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 def compile_go_library():
     """Compile the Go shared library."""
     print("Compiling Go shared library...")
 
     # Define Go source directory
-    libkubo_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)),'src', 'libkubo')
+    libkubo_dir = os.path.join(PROJ_DIR, 'src', 'libkubo')
 
     # Check if Go is installed
     try:
@@ -30,7 +32,7 @@ def compile_go_library():
 
     # Create the lib directory if it doesn't exist
     lib_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'src','kubo_python', 'lib')
+        os.path.abspath(__file__)), 'src', 'kubo_python', 'lib')
     if not os.path.exists(lib_dir):
         os.makedirs(lib_dir)
 
@@ -93,6 +95,9 @@ class DevelopCommand(develop):
         compile_go_library()
         super().run()
 
+
+# for some reason the following setup function can't handle the git URL in requirements.txt, so let's install it like so
+pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
     name="kubo-python",
