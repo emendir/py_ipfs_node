@@ -25,7 +25,9 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 #line 1 "cgo-generated-wrapper"
 
 #line 3 "p2p.go"
- #include <stdlib.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
 
 #line 1 "cgo-generated-wrapper"
 
@@ -118,7 +120,7 @@ extern int P2PListen(char* repoPath, char* proto, char* targetAddr);
 
 // P2PClose closes p2p listener or stream
 //
-extern int P2PClose(char* repoPath, char* proto, char* listenAddr, char* targetPeerID);
+extern int P2PClose(char* repoPath, char* proto, char* listenAddr, char* targetAddr, _Bool _all, _Bool listeners, _Bool forwarders);
 
 // P2PListListeners lists active p2p listeners
 //
@@ -141,7 +143,20 @@ extern int P2PCloseAllListeners(char* repoPath);
 extern int P2PCloseAllForwards(char* repoPath);
 
 // ConnectToPeer connects to a peer
+//
 extern int ConnectToPeer(char* repoPath, char* peerAddr);
+
+// ListPeers connects to a peer
+//
+extern char* ListPeers(char* repoPath);
+
+// ListPeers connects to a peer
+//
+extern char* ListPeersIDs(char* repoPath);
+
+// FindPeer connects to a peer
+//
+extern char* FindPeer(char* repoPath, char* peerAddr, int timeOut);
 
 // PubSubListTopics lists the topics the node is subscribed to
 //
