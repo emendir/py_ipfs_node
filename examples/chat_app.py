@@ -300,7 +300,7 @@ class ChatApp:
             self.control_subscription.close()
             
         # Close the IPFS node
-        self.node.close()
+        self.node.terminate()
         
     def __enter__(self):
         """Support for context manager protocol."""

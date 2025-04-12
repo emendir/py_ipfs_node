@@ -95,11 +95,12 @@ class IpfsNode(BaseClient):
 
 
 
-    def close(self):
+    def terminate(self):
         """Close the IPFS node and clean up resources."""
-        self._pubsub.close()
-        self._tcp.close()
-        self._files.close()
+        self._pubsub.terminate()
+        self._tcp.terminate()
+        self._files.terminate()
+        self._peers.terminate()
         # Force cleanup of the node in Go
         if self._repo_path:
             try:
@@ -121,7 +122,7 @@ class IpfsNode(BaseClient):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Clean up when exiting the context manager."""
-        self.close()
+        self.terminate()
 
 
     def _ipfs_host_ip(self,):
@@ -198,6 +199,32 @@ class IpfsNode(BaseClient):
             IpfsNode: A new IPFS node instance with a temporary repository.
         """
         return cls(None, online, enable_pubsub)
-    def get_multiaddrs(self):
-        pass
-    
+    def get_addrs(self):
+        if not self._online:
+            print("IPFS: not online")
+            return ""
+
+        # try to get the node ID
+        try:
+            repo_path = c_str(self._repo_path.encode('utf-8'))
+
+            id_ptr = libkubo.GetNodeMultiAddrs(repo_path)
+
+            if not id_ptr:
+                print("IPFS: NO ID_PTR")
+                return ""
+
+            # Copy the string content
+            json_data = from_c_str(id_ptr)
+
+            # Don't free the memory - let Go's finalizer handle it
+            # The memory will be freed when Go's garbage collector runs
+
+            # Strip the prefix we added for debugging
+            return json.loads(json_data)
+        except Exception as e:
+            print(f"IPFS ERROR in get_node_id: {e}")
+            return f"ERROR: {e}"
+
+    def __del__(self):
+        self.terminate()

@@ -162,8 +162,7 @@ class NodeTcp(BaseTcp):
         result = libkubo.P2PClose(
             c_str(self._repo_path.encode('utf-8')),
             c_str(name.encode('utf-8')),
-            c_str(f"/ip4/{self._node._ipfs_host_ip()
-                          }/tcp/{port}".encode('utf-8')) if port else c_str(""),
+            c_str(self._port_to_addr(port)) if port else c_str(""),
             c_str(target_peer_id.encode('utf-8'))
         )
         return result > 0
@@ -301,8 +300,6 @@ class NodeTcp(BaseTcp):
 
         return listeners, forwarders,  streams
 
-    def close(self):
-        pass
 
     def _port_to_addr(self, addr: int | str | None) -> str:
         if not addr:
@@ -311,3 +308,7 @@ class NodeTcp(BaseTcp):
             return f"/ip4/{self._node._ipfs_host_ip()}/tcp/{addr}"
         else:
             return addr
+    def terminate(self):
+        pass
+    def __del__(self):
+        self.terminate()

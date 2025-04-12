@@ -30,7 +30,7 @@ def add_files(node, path, recursive=True):
         return cid
     elif path.is_file():
         print(f"Adding file: {path}")
-        cid = node.files.add_file(str(path))
+        cid = node.files.publish(str(path))
         print(f"File added with CID: {cid}")
         return cid
     else:

@@ -455,7 +455,7 @@ class NodePubsub(BasePubSub):
 
         return result == 0
     
-    def close(self):
+    def terminate(self):
         # Close all active subscriptions
         for topic, subscriptions in list(self._subscriptions.items()):
             for sub in list(subscriptions):
@@ -465,3 +465,5 @@ class NodePubsub(BasePubSub):
                     print(f"Warning: Error closing subscription: {e}")
 
         self._subscriptions.clear()
+    def __del__(self):
+        self.terminate()

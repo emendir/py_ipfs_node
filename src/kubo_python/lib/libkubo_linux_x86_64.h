@@ -21,6 +21,7 @@ typedef struct { const char *p; ptrdiff_t n; } _GoString_;
 
 #line 3 "files.go"
  #include <stdlib.h>
+ #include <stdbool.h>
 
 #line 1 "cgo-generated-wrapper"
 
@@ -102,13 +103,32 @@ extern "C" {
 
 
 // AddFile adds a file to IPFS
-extern char* AddFile(char* repoPath, char* filePath);
+//
+extern char* AddFile(char* repoPath, char* filePath, _Bool onlyHash);
 
 // FreeString is a no-op for now - we'll let Go's garbage collection handle the memory
+//
 extern void FreeString(char* str);
 
-// GetFile retrieves a file from IPFS
-extern int GetFile(char* repoPath, char* cidStr, char* destPath);
+// Download retrieves a file or directory from IPFS
+//
+extern int Download(char* repoPath, char* cidStr, char* destPath);
+
+// PinCID pins a CID to the IPFS node
+//
+extern int PinCID(char* repoPath, char* cidStr);
+
+// UnpinCID unpins a CID from the IPFS node
+//
+extern int UnpinCID(char* repoPath, char* cidStr);
+
+// ListPins returns a list of pinned CIDs
+//
+extern char* ListPins(char* repoPath);
+
+// RemoveCID removes a pinned CID from IPFS (alias for UnpinCID for clarity)
+//
+extern int RemoveCID(char* repoPath, char* cidStr);
 
 // P2PForward creates a libp2p stream mounting forwarding connection
 //
@@ -203,6 +223,10 @@ extern char* TestGetString();
 // GetNodeID gets the ID of the IPFS node
 //
 extern char* GetNodeID(char* repoPath);
+
+// GetNodeMultiAddrs gets the ID of the IPFS node
+//
+extern char* GetNodeMultiAddrs(char* repoPath);
 
 // CleanupNode explicitly releases a node by path
 //
