@@ -24,7 +24,7 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	path := C.GoString(repoPath)
 	addr := C.GoString(peerAddr)
 
-	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer %s using repo %s\n", addr, path)
+	log.Printf("ERROR: Connecting to peer %s using repo %s\n", addr, path)
 
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
@@ -36,7 +36,7 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	defer ReleaseNode(path)
 
 	// Parse the peer address
-	fmt.Fprintf(os.Stderr, "DEBUG: Parsing peer address\n")
+	log.Printf("ERROR: Parsing peer address\n")
 	peerInfo, err := peer.AddrInfoFromString(addr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing peer address: %s\n", err)
@@ -44,14 +44,14 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	}
 
 	// Connect to the peer
-	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer\n")
+	log.Printf("ERROR: Connecting to peer\n")
 	err = api.Swarm().Connect(ctx, *peerInfo)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error connecting to peer: %s\n", err)
 		return C.int(-3)
 	}
 
-	fmt.Fprintf(os.Stderr, "DEBUG: Connected to peer successfully\n")
+	log.Printf("ERROR: Connected to peer successfully\n")
 	return C.int(0) // Success
 }
 
@@ -63,7 +63,7 @@ func ListPeers(repoPath *C.char) *C.char {
 
 	path := C.GoString(repoPath)
 
-	fmt.Fprintf(os.Stderr, "DEBUG: Cetting peers for repo %s\n", path)
+	log.Printf("ERROR: Cetting peers for repo %s\n", path)
 
 	// Get or create a node from the registry
 	api, _, err := AcquireNode(path)
@@ -75,7 +75,7 @@ func ListPeers(repoPath *C.char) *C.char {
 	defer ReleaseNode(path)
 
 	// Connect to the peer
-	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer\n")
+	log.Printf("ERROR: Connecting to peer\n")
 	peers, err := api.Swarm().Peers(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error connecting to peer: %s\n", err)
@@ -152,7 +152,7 @@ func FindPeer(repoPath, peerAddr *C.char, timeOut C.int) *C.char {
 	path := C.GoString(repoPath)
 	addr := C.GoString(peerAddr)
 	timeout := int(timeOut)
-	fmt.Fprintf(os.Stderr, "DEBUG: Connecting to peer %s using repo %s\n", addr, path)
+	log.Printf("ERROR: Connecting to peer %s using repo %s\n", addr, path)
 
 	// Get or create a node from the registry
 	_, node, err := AcquireNode(path)
@@ -164,13 +164,13 @@ func FindPeer(repoPath, peerAddr *C.char, timeOut C.int) *C.char {
 	defer ReleaseNode(path)
 
 	// Parse the peer address
-	fmt.Fprintf(os.Stderr, "DEBUG: Parsing peer address\n")
+	log.Printf("ERROR: Parsing peer address\n")
 	pid, err := peer.Decode(addr)
 	if err != nil {
 		return C.CString("[]") // Return empty JSON array
 	}
 	// Connect to the peer
-	fmt.Fprintf(os.Stderr, "DEBUG: Finding peer...\n")
+	log.Printf("ERROR: Finding peer...\n")
 	multi_addresses, err := node.Routing.FindPeer(ctx, pid)
 	if err != nil || len(multi_addresses.Addrs) == 0 {
 		SearchForPeer(ctx, node, pid, timeout)
