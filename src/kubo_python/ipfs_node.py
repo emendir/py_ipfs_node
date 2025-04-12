@@ -15,7 +15,8 @@ from .ipfs_p2p import NodeTcp
 from .ipfs_files import NodeFiles
 from .ipfs_peers import NodePeers
 
-class IpfsNode:
+from ipfs_toolkit_generics import BaseClient
+class IpfsNode(BaseClient):
     """
     Python wrapper for a Kubo IPFS node.
 
@@ -197,4 +198,6 @@ class IpfsNode:
             IpfsNode: A new IPFS node instance with a temporary repository.
         """
         return cls(None, online, enable_pubsub)
+    def get_multiaddrs(self):
+        pass
     

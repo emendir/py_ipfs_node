@@ -122,8 +122,8 @@ def main():
     finally:
         # Clean up
         if args.listen or args.forward:
-            node.tcp.close_streams(args.protocol)
-            print(f"Closed P2P connection for protocol: {args.protocol}")
+            # node.tcp.close_streams(args.protocol)
+            print(f"Skipped P2P connection for protocol: {args.protocol}")
         
         # Close the IPFS node
         node.close()

@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .lib import libkubo, c_str, from_c_str, ffi
 DEF_FIND_TIMEOUT=10
-class NodePeers:
+from ipfs_toolkit_generics import BasePeers
+class NodePeers(BasePeers):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
@@ -21,9 +22,15 @@ class NodePeers:
             libkubo.FindPeer(c_str(self._repo_path), c_str(peer_id), timeout), 
         )
         return json.loads(data)
-    def list(self)->list[str]:
+    def list_peers(self)->list[str]:
         data = from_c_str(
             libkubo.ListPeers(c_str(self._repo_path))
+        )
+    
+        return json.loads(data)
+    def list_ids(self)->list[str]:
+        data = from_c_str(
+            libkubo.ListPeersIDs(c_str(self._repo_path))
         )
     
         return json.loads(data)
@@ -56,3 +63,5 @@ class NodePeers:
             )
             
             return json.loads(data)
+    def is_peer_connected(self, peer_id:str):
+        return peer_id in self.list_ids()

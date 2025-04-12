@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .lib import libkubo, c_str, from_c_str, ffi
 
-class NodeFiles:
+from ipfs_toolkit_generics import BaseFiles
+class NodeFiles(BaseFiles):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
@@ -48,7 +49,7 @@ class NodeFiles:
                     # Silently ignore cleanup errors
                     pass
 
-    def add_str(self, content: str, filename: Optional[str] = None) -> str:
+    def publish_str(self, content: str, filename: Optional[str] = None) -> str:
         """
         Add string content to IPFS.
 
@@ -61,7 +62,7 @@ class NodeFiles:
         """
         return self.add_bytes(content.encode('utf-8'), filename)
 
-    def get_bytes(self, cid: str) -> bytes:
+    def read(self, cid: str) -> bytes:
         """
         Get bytes data from IPFS.
 
@@ -98,20 +99,8 @@ class NodeFiles:
                     # Silently ignore cleanup errors
                     pass
 
-    def get_str(self, cid: str, encoding: str = 'utf-8') -> str:
-        """
-        Get string content from IPFS.
 
-        Args:
-            cid: The Content Identifier of the content to retrieve.
-            encoding: The encoding to use when decoding the bytes.
-
-        Returns:
-            str: The retrieved content as a string.
-        """
-        data = self.get_bytes(cid)
-        return data.decode(encoding)
-    def add_file(self, file_path: str) -> str:
+    def publish(self, file_path: str) -> str:
         """
         Add a file to IPFS.
 
@@ -150,21 +139,7 @@ class NodeFiles:
             # Handle any exceptions during the process
             raise RuntimeError(f"Error adding file to IPFS: {e}")
 
-    def add_directory(self, dir_path: str) -> str:
-        """
-        Add a directory to IPFS.
 
-        Args:
-            dir_path: Path to the directory to add.
-
-        Returns:
-            str: The CID (Content Identifier) of the added directory.
-        """
-        if not os.path.isdir(dir_path):
-            raise NotADirectoryError(f"Not a directory: {dir_path}")
-
-        # The underlying Go implementation handles directories
-        return self.add_file(dir_path)
 
     def download(self, cid: str, dest_path: str) -> bool:
         """
@@ -188,5 +163,17 @@ class NodeFiles:
         except Exception as e:
             # Handle any exceptions during the process
             raise RuntimeError(f"Error retrieving file from IPFS: {e}")
+
     def close(self):
+        pass
+    def pin(self, cid:str):
+        pass
+    def unpin(self, cid:str):
+        pass
+    def predict_cid(self, cid:str):
+        pass
+    def remove(self, cid:str):
+        pass
+    def pins(self):
+        #TODO
         pass
