@@ -227,7 +227,8 @@ class IPFSSubscription:
     def terminate(self, *args, **kwargs):
         return self.close()
 
-class NodePubsub:
+from ipfs_toolkit_generics import BasePubSub
+class NodePubsub(BasePubSub):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path

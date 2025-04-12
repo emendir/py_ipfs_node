@@ -24,7 +24,7 @@ def test_findpeer():
         print("Failure.")
 def test_list_peers():
     node_2_peers = [
-        multiaddr.split("/")[-1] for multiaddr in pytest.node_2.peers.list()
+        multiaddr.split("/")[-1] for multiaddr in pytest.node_2.peers.list_peers()
     ]
     # print("Peers", node_2_peers)
     success = pytest.node_1.peer_id in node_2_peers

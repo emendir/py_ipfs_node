@@ -150,6 +150,10 @@ extern int ConnectToPeer(char* repoPath, char* peerAddr);
 //
 extern char* ListPeers(char* repoPath);
 
+// ListPeers connects to a peer
+//
+extern char* ListPeersIDs(char* repoPath);
+
 // FindPeer connects to a peer
 //
 extern char* FindPeer(char* repoPath, char* peerAddr, int timeOut);

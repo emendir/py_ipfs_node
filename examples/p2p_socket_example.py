@@ -136,7 +136,7 @@ def run_server():
         print("Shutting down...")
     finally:
         # Clean up
-        node.tcp.close_streams(protocol)
+        # node.tcp.close_streams(protocol)
         node.close()
 
 

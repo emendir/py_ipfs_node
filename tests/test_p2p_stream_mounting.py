@@ -80,9 +80,9 @@ def run():
     assert response == test_message, "Response did not match sent message!"
 
     # Clean up
-    server_node.tcp.close_streams(protocol)
+    # server_node.tcp.close_streams(protocol)
     server_node.close()
-    client_node.tcp.close_streams(protocol)
+    # client_node.tcp.close_streams(protocol)
     client_node.close()
     print("[TEST] Test passed and cleaned up successfully.")
 
