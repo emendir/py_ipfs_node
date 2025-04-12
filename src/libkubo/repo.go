@@ -21,15 +21,15 @@ import (
 )
 
 func init() {
-	f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err == nil {
-		log.SetOutput(f)
-		log.SetPrefix("IPFS: ")
-		log.Println("DEBUG: Logging to file now")
-	} else {
-		// Optional fallback
-		log.Printf("Failed to open log file: %v", err)
-	}
+	// f, err := os.OpenFile("kubo.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	// if err == nil {
+	// 	log.SetOutput(f)
+	// 	log.SetPrefix("IPFS: ")
+	// 	log.Println("DEBUG: Logging to file now")
+	// } else {
+	// 	// Optional fallback
+	// 	log.Printf("Failed to open log file: %v", err)
+	// }
 }
 
 var plugins *loader.PluginLoader
@@ -143,7 +143,7 @@ func ReleaseNode(repoPath string) {
 	}
 
 	nodeInfo.RefCount--
-	log.Printf("DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
+	// log.Printf("DEBUG: Released node for repo %s (refcount: %d)\n", repoPath, nodeInfo.RefCount)
 
 	if nodeInfo.RefCount <= 0 {
 		log.Printf("DEBUG: Closing node for repo %s\n", repoPath)
@@ -158,7 +158,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	// Open the repo
 	repo, err := fsrepo.Open(repoPath)
 	if err != nil {
-		log.Printf("DEBUG: Error opening repo: %v\n", err)
+		log.Printf("ERROR: Error opening repo: %v\n", err)
 		return nil, nil, err
 	}
 
@@ -203,7 +203,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	ctx := context.Background()
 	node, err := core.NewNode(ctx, nodeOptions)
 	if err != nil {
-		log.Printf("DEBUG: Error creating node: %v\n", err)
+		log.Printf("ERROR: Error creating node: %v\n", err)
 		repo.Close()
 		return nil, nil, err
 	}
@@ -212,7 +212,7 @@ func createNewNode(repoPath string) (iface.CoreAPI, *core.IpfsNode, error) {
 	// log.Printf("DEBUG: Creating CoreAPI\n")
 	api, err := coreapi.NewCoreAPI(node)
 	if err != nil {
-		log.Printf("DEBUG: Error creating API: %v\n", err)
+		log.Printf("ERROR: Error creating API: %v\n", err)
 		node.Close()
 		return nil, nil, err
 	}
@@ -305,11 +305,11 @@ func GetNodeID(repoPath *C.char) *C.char {
 func CleanupNode(repoPath *C.char) C.int {
 	log.Printf("DEBUG: Cleaning up node...")
 	
-	log.Printf("Closing listeners...")
+	// log.Printf("Closing listeners...")
 	P2PCloseAllListeners(repoPath)
-	log.Printf("Closing forwarders...")
+	// log.Printf("Closing forwarders...")
 	P2PCloseAllForwards(repoPath)
-	log.Printf("Closing subscriptions...")
+	// log.Printf("Closing subscriptions...")
 	PubSubCloseRepoSubscriptions(repoPath)
 	
 	path := C.GoString(repoPath)
@@ -324,8 +324,8 @@ func CleanupNode(repoPath *C.char) C.int {
 	}
 
 	// Force close regardless of reference count
-	log.Printf("DEBUG: Force closing node for repo %s (refcount was: %d)\n",
-		path, nodeInfo.RefCount)
+	// log.Printf("DEBUG: Force closing node for repo %s (refcount was: %d)\n",
+	// 	path, nodeInfo.RefCount)
 	nodeInfo.Node.Close()
 	delete(activeNodes, path)
 

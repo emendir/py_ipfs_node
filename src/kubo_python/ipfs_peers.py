@@ -20,7 +20,6 @@ class NodePeers:
         data = from_c_str(
             libkubo.FindPeer(c_str(self._repo_path), c_str(peer_id), timeout), 
         )
-        print("data", data)
         return json.loads(data)
     def list(self)->list[str]:
         data = from_c_str(

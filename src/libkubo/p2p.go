@@ -1,18 +1,21 @@
 package main
 
-// #include <stdlib.h>
+/*
+#include <stdlib.h>
+#include <stdbool.h>
+*/
 import "C"
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"strings"
 	"github.com/ipfs/kubo/p2p"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	ma "github.com/multiformats/go-multiaddr"
+	"log"
+	"strings"
 )
 
 // P2PForward creates a libp2p stream mounting forwarding connection
@@ -32,7 +35,7 @@ func P2PForward(repoPath, proto, listenAddr, targetPeerID *C.char) C.int {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P forwarding: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P forwarding: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
@@ -43,25 +46,25 @@ func P2PForward(repoPath, proto, listenAddr, targetPeerID *C.char) C.int {
 	// Parse the listen address as a multiaddr
 	listenMA, err := ma.NewMultiaddr(listenAddress)
 	if err != nil {
-		log.Printf("Error parsing listen address: %v\n", err)
+		log.Printf("ERROR parsing listen address: %v\n", err)
 		return C.int(-3)
 	}
 
 	// Parse the peer ID
 	peerID, err := peer.Decode(peerIDStr)
 	if err != nil {
-		log.Printf("Error parsing peer ID: %v\n", err)
+		log.Printf("ERROR parsing peer ID: %v\n", err)
 		return C.int(-4)
 	}
 
 	// Create the forwarding (ForwardLocal is used to connect to a remote peer)
 	listener, err := p2pService.ForwardLocal(context.Background(), peerID, protocol.ID(protocolName), listenMA)
 	if err != nil {
-		log.Printf("Error creating P2P forward: %v\n", err)
+		log.Printf("ERROR creating P2P forward: %v\n", err)
 		return C.int(-2)
 	}
 
-	log.Printf("P2P forward created: %s -> %s via %s\n", 
+	log.Printf("P2P forward created: %s -> %s via %s\n",
 		listener.ListenAddress().String(), listener.TargetAddress().String(), listener.Protocol())
 	return C.int(1)
 }
@@ -82,7 +85,7 @@ func P2PListen(repoPath, proto, targetAddr *C.char) C.int {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P listening: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P listening: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
@@ -93,7 +96,7 @@ func P2PListen(repoPath, proto, targetAddr *C.char) C.int {
 	// Parse the target address as a multiaddr
 	targetMA, err := ma.NewMultiaddr(targetAddress)
 	if err != nil {
-		log.Printf("Error parsing target address: %v\n", err)
+		log.Printf("ERROR parsing target address: %v\n", err)
 		return C.int(-3)
 	}
 
@@ -101,7 +104,7 @@ func P2PListen(repoPath, proto, targetAddr *C.char) C.int {
 	// The last parameter is reportRemote which we set to false
 	listener, err := p2pService.ForwardRemote(context.Background(), protocol.ID(protocolName), targetMA, false)
 	if err != nil {
-		log.Printf("Error creating P2P listener: %v\n", err)
+		log.Printf("ERROR creating P2P listener: %v\n", err)
 		return C.int(-2)
 	}
 
@@ -112,90 +115,100 @@ func P2PListen(repoPath, proto, targetAddr *C.char) C.int {
 // P2PClose closes p2p listener or stream
 //
 //export P2PClose
-func P2PClose(repoPath, proto, listenAddr, targetPeerID *C.char) C.int {
+func P2PClose(
+	repoPath *C.char,
+	proto *C.char, listenAddr *C.char, targetAddr *C.char, _all C.bool,
+	listeners  C.bool, forwarders  C.bool,
+) C.int {
 	path := C.GoString(repoPath)
 	protocolName := C.GoString(proto)
-	// listenAddress := C.GoString(listenAddr)
-	peerIDStr := C.GoString(targetPeerID)
+	listenAddress := C.GoString(listenAddr)
+	targetAddress := C.GoString(targetAddr)
+	all := bool(_all)
+	closeListeners := bool(listeners)
+	closeForwarders := bool(forwarders)
 
-	// Format the protocol as needed (Kubo requires /x/ prefix)
-	if !strings.HasPrefix(protocolName, "/x/") {
-		protocolName = "/x/" + protocolName
+	var protocolID protocol.ID
+	// Try to use the P2P service's methods to close listeners
+	// Close local listeners for the given protocol
+	if protocolName != "" {
+		// Format the protocol as needed (Kubo requires /x/ prefix)
+		if !strings.HasPrefix(protocolName, "/x/") {
+			protocolName = "/x/" + protocolName
+		}
+		protocolID = protocol.ID(protocolName)
 	}
+	if listenAddress != "" {
+		_, err := ma.NewMultiaddr(listenAddress)
+		if err != nil {
+			log.Printf("ERROR parsing listen address for P2P close: %v\n", err)
+			return C.int(-1)
+		}
+	}
+
+	if targetAddress != "" {
+	_, err := ma.NewMultiaddr(targetAddress)
+	if err != nil {
+		log.Printf("ERROR parsing target address for P2P close: %v\n", err)
+		return C.int(-1)
+	}
+}
 
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P close: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P close: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
+
+	log.Printf("Closing connections for: %s, %s, %s, %b, %b,%b", protocolName, listenAddress, targetAddress, all, closeListeners, closeForwarders)
 
 	// Get the P2P service from the node
 	p2pService := node.P2P
 
 	// Find listeners to close
 	count := 0
-	
-	// Try to use the P2P service's methods to close listeners
-	// Close local listeners for the given protocol
-	if protocolName != "" {
-		protocolID := protocol.ID(protocolName)
-		matchFunc := func(listener p2p.Listener) bool {
-			return listener.Protocol() == protocolID
+
+	matchFunc := func(listener p2p.Listener) bool {
+		if all {
+			return true
 		}
-		
-		closedCount := p2pService.ListenersLocal.Close(matchFunc)
+		if protocolName != "" && listener.Protocol() != protocolID {
+			return false
+		}
+		if listenAddress != "" && listener.ListenAddress().String() != listenAddress {
+			return false
+		}
+		if targetAddress != "" && listener.TargetAddress().String() != targetAddress {
+			return false
+		}
+		return true
+	}
+	closedCount := 0
+	if closeListeners {
+
+		closedCount = p2pService.ListenersP2P.Close(matchFunc)
 		if closedCount > 0 {
-			log.Printf("Closed %d local P2P listener(s) for protocol: %s\n", closedCount, protocolName)
+			// log.Printf("Closed %d local P2P listener(s) for protocol: %s\n", closedCount, protocolName)
 			count += closedCount
 		}
 	}
-	
-	// Close remote listeners for the given protocol
-	if protocolName != "" {
-		protocolID := protocol.ID(protocolName)
-		matchFunc := func(listener p2p.Listener) bool {
-			return listener.Protocol() == protocolID
-		}
-		
-		closedCount := p2pService.ListenersP2P.Close(matchFunc)
+	if closeForwarders {
+
+		closedCount = p2pService.ListenersLocal.Close(matchFunc)
 		if closedCount > 0 {
-			log.Printf("Closed %d remote P2P listener(s) for protocol: %s\n", closedCount, protocolName)
+			// log.Printf("Closed %d remote P2P listener(s) for protocol: %s\n", closedCount, protocolName)
 			count += closedCount
 		}
 	}
-	
-	// Close any matching streams
-	for streamID, stream := range p2pService.Streams.Streams {
-		if protocol.ID(protocolName) == stream.Protocol {
-			// If peer ID was specified, match it
-			if peerIDStr != "" {
-				// peerID, err := peer.Decode(peerIDStr)
-				// if err != nil {
-				// 	log.Printf("Error parsing peer ID: %v\n", err)
-				// 	return C.int(-4)
-				// }
-				
-				// Skip this stream if peer ID doesn't match
-				// Currently disabled until we know the exact field name
-				// if stream.peer != peerID {
-				// 	continue
-				// }
-			}
-			
-			log.Printf("Closing P2P stream ID: %d\n", streamID)
-			// Close the stream object directly
-			p2pService.Streams.Close(stream)
-			count++
-		}
-	}
-	
+	log.Printf("Closed %d P2P listener(s) for protocol: %s\n", closedCount, protocolName)
+
 	if count == 0 {
 		log.Printf("No P2P listeners or streams found for protocol: %s\n", protocolName)
 		return C.int(0)
 	}
-	
+
 	return C.int(count)
 }
 
@@ -208,7 +221,7 @@ func P2PListListeners(repoPath *C.char) *C.char {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P list: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P list: %v\n", err)
 		return C.CString("")
 	}
 	defer ReleaseNode(path)
@@ -221,7 +234,7 @@ func P2PListListeners(repoPath *C.char) *C.char {
 
 	// Get local listeners
 	localList := make([]map[string]string, 0)
-	
+
 	for _, l := range p2pService.ListenersLocal.Listeners {
 		info := map[string]string{
 			"Protocol":      string(l.Protocol()),
@@ -230,11 +243,11 @@ func P2PListListeners(repoPath *C.char) *C.char {
 		}
 		localList = append(localList, info)
 	}
-	result["LocalListeners"] = localList
+	result["Forwards"] = localList
 
 	// Get remote listeners
 	remoteList := make([]map[string]string, 0)
-	
+
 	for _, l := range p2pService.ListenersP2P.Listeners {
 		info := map[string]string{
 			"Protocol":      string(l.Protocol()),
@@ -243,17 +256,17 @@ func P2PListListeners(repoPath *C.char) *C.char {
 		}
 		remoteList = append(remoteList, info)
 	}
-	result["RemoteListeners"] = remoteList
+	result["Listens"] = remoteList
 
 	// Get active streams
 	streamsList := make([]map[string]string, 0)
-	
+
 	for id, s := range p2pService.Streams.Streams {
 		info := map[string]string{
-			"Protocol":     string(s.Protocol),
-			"LocalAddr":    s.OriginAddr.String(),
-			"RemoteAddr":   s.TargetAddr.String(),
-			"ID":           fmt.Sprintf("%d", id),
+			"Protocol":   string(s.Protocol),
+			"LocalAddr":  s.OriginAddr.String(),
+			"RemoteAddr": s.TargetAddr.String(),
+			"ID":         fmt.Sprintf("%d", id),
 		}
 		streamsList = append(streamsList, info)
 	}
@@ -262,7 +275,7 @@ func P2PListListeners(repoPath *C.char) *C.char {
 	// Convert to JSON
 	jsonData, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("Error marshaling P2P listener data: %v\n", err)
+		log.Printf("ERROR marshaling P2P listener data: %v\n", err)
 		return C.CString("")
 	}
 
@@ -274,18 +287,18 @@ func P2PListListeners(repoPath *C.char) *C.char {
 //export P2PEnable
 func P2PEnable(repoPath *C.char) C.int {
 	path := C.GoString(repoPath)
-	
+
 	// Use AcquireNode just to make sure the node is running
 	_, _, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node: %v\n", err)
+		log.Printf("ERROR acquiring node: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
 
 	// Node configuration already has the required experimental features enabled
 	log.Printf("P2P functionality enabled for repo: %s\n", path)
-	
+
 	return C.int(1)
 }
 
@@ -298,7 +311,7 @@ func P2PListForwards(repoPath *C.char) *C.char {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P forwards list: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P forwards list: %v\n", err)
 		return C.CString("")
 	}
 	defer ReleaseNode(path)
@@ -311,7 +324,7 @@ func P2PListForwards(repoPath *C.char) *C.char {
 
 	// Get local forwards (outgoing connections to remote peers)
 	localForwards := make([]map[string]string, 0)
-	
+
 	for _, l := range p2pService.ListenersLocal.Listeners {
 		info := map[string]string{
 			"Protocol":      string(l.Protocol()),
@@ -324,13 +337,13 @@ func P2PListForwards(repoPath *C.char) *C.char {
 
 	// Get active streams associated with forwards
 	activeForwards := make([]map[string]string, 0)
-	
+
 	for id, s := range p2pService.Streams.Streams {
 		info := map[string]string{
-			"Protocol":     string(s.Protocol),
-			"LocalAddr":    s.OriginAddr.String(),
-			"RemoteAddr":   s.TargetAddr.String(),
-			"ID":           fmt.Sprintf("%d", id),
+			"Protocol":   string(s.Protocol),
+			"LocalAddr":  s.OriginAddr.String(),
+			"RemoteAddr": s.TargetAddr.String(),
+			"ID":         fmt.Sprintf("%d", id),
 		}
 		activeForwards = append(activeForwards, info)
 	}
@@ -339,7 +352,7 @@ func P2PListForwards(repoPath *C.char) *C.char {
 	// Convert to JSON
 	jsonData, err := json.Marshal(result)
 	if err != nil {
-		log.Printf("Error marshaling P2P forwards data: %v\n", err)
+		log.Printf("ERROR marshaling P2P forwards data: %v\n", err)
 		return C.CString("")
 	}
 
@@ -355,7 +368,7 @@ func P2PCloseAllListeners(repoPath *C.char) C.int {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P close all listeners: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P close all listeners: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
@@ -370,7 +383,7 @@ func P2PCloseAllListeners(repoPath *C.char) C.int {
 	matchAllRemote := func(listener p2p.Listener) bool {
 		return true // Match all listeners
 	}
-	
+
 	remoteClosed := p2pService.ListenersP2P.Close(matchAllRemote)
 	if remoteClosed > 0 {
 		log.Printf("Closed %d remote P2P listener(s)\n", remoteClosed)
@@ -389,7 +402,7 @@ func P2PCloseAllForwards(repoPath *C.char) C.int {
 	// Get the node for this repo
 	_, node, err := AcquireNode(path)
 	if err != nil {
-		log.Printf("Error acquiring node for P2P close all forwards: %v\n", err)
+		log.Printf("ERROR acquiring node for P2P close all forwards: %v\n", err)
 		return C.int(-1)
 	}
 	defer ReleaseNode(path)
@@ -404,7 +417,7 @@ func P2PCloseAllForwards(repoPath *C.char) C.int {
 	matchAllLocal := func(listener p2p.Listener) bool {
 		return true // Match all local listeners
 	}
-	
+
 	localClosed := p2pService.ListenersLocal.Close(matchAllLocal)
 	if localClosed > 0 {
 		log.Printf("Closed %d local P2P forward(s)\n", localClosed)
@@ -416,7 +429,7 @@ func P2PCloseAllForwards(repoPath *C.char) C.int {
 		p2pService.Streams.Close(stream)
 		totalClosed++
 	}
-	
+
 	if len(p2pService.Streams.Streams) > 0 {
 		log.Printf("Closed %d active P2P stream(s)\n", len(p2pService.Streams.Streams))
 	}

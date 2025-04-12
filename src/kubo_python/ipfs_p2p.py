@@ -2,7 +2,7 @@ import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
 from ipfs_toolkit_generics import BaseTcp
-from .lib import libkubo, c_str, from_c_str, ffi
+from .lib import libkubo, c_str, from_c_str, ffi, c_bool
 
 
 class P2PMapping:
@@ -74,7 +74,7 @@ class NodeTcp(BaseTcp):
             return False
         return True
 
-    def open_sender(self, name: str, port: int, target_peer_id: str) -> bool:
+    def open_sender(self, name: str, listen_addr: int | str, target_peer_id: str) -> bool:
         """
         Forward local connections to a remote peer.
 
@@ -89,16 +89,17 @@ class NodeTcp(BaseTcp):
         Returns:
             bool: True if the forwarding was set up successfully, False otherwise.
         """
+        # if not target_peer_id.startswith("/p2p/"):
+        #     target_peer_id = f"/p2p/{target_peer_id}"
         result = libkubo.P2PForward(
             c_str(self._repo_path.encode('utf-8')),
             c_str(name.encode('utf-8')),
-            c_str(f"/ip4/{self._node._ipfs_host_ip()
-                          }/tcp/{port}".encode('utf-8')),
+            c_str(self._port_to_addr(listen_addr).encode('utf-8')),
             c_str(target_peer_id.encode('utf-8'))
         )
         return result > 0
 
-    def open_listener(self, name: str, port: int) -> bool:
+    def open_listener(self, name: str, target_addr: int | str) -> bool:
         """
         Listen for libp2p connections and forward them to a local TCP service.
 
@@ -114,10 +115,7 @@ class NodeTcp(BaseTcp):
         result = libkubo.P2PListen(
             c_str(self._repo_path.encode('utf-8')),
             c_str(name.encode('utf-8')),
-            c_str(
-                f"/ip4/{self._node._ipfs_host_ip()}/tcp/{port}".encode('utf-8')
-            )
-        )
+            c_str(self._port_to_addr(target_addr)))
         return result > 0
 
     def close_sender(self, name: str = None, port: int = None, peer_id: str = None) -> int:
@@ -132,7 +130,9 @@ class NodeTcp(BaseTcp):
         Returns:
             int: Number of forwarding connections closed
         """
-        return self.close_tcp_connection(name, port, peer_id)
+        if not peer_id.startswith("/p2p/"):
+            peer_id = f"/p2p/{peer_id}"
+        return self.close_tcp_connections(name, port, peer_id, senders=True, listeners=False)
 
     def close_listener(self, name: str = None, port: int = None) -> int:
         """
@@ -145,7 +145,7 @@ class NodeTcp(BaseTcp):
         Returns:
             int: Number of listening connections closed
         """
-        return self.close_tcp_connection(name, port)
+        return self.close_tcp_connections(name, port, listeners=True, senders=False)
 
     def close_streams(self, name: str, port: int | None = None, target_peer_id: str = "") -> bool:
         """
@@ -168,7 +168,11 @@ class NodeTcp(BaseTcp):
         )
         return result > 0
 
-    def close_tcp_connection(self, name: str = None, port: int = None, peer_id: str = None) -> int:
+    def close_tcp_connections(
+        self,
+        name: str = "", listen_addr: str | int | None = None, target_addr: str | int | None = None, all: bool = False,
+        listeners: bool = True, senders: bool = True
+    ) -> int:
         """
         Close specific TCP p2p connections, optionally filtered by protocol name, port, or peer ID.
 
@@ -183,43 +187,39 @@ class NodeTcp(BaseTcp):
 
         repo_path = c_str(self._repo_path.encode('utf-8'))
 
-        # Format protocol filter
-        proto_c = c_str((name if name else "").encode('utf-8'))
-
-        # Format port filter
-        listen_addr = f"/ip4/127.0.0.1/tcp/{port}" if port is not None else ""
-        listen_addr_c = (
-            c_str(
-                f"/ip4/{self._node._ipfs_host_ip()}/tcp/{port}".encode('utf-8')
-            )
-             if port else c_str("")
-         )
-
-        # Format peer ID filter
-        peer_id_c = c_str((peer_id if peer_id else "").encode('utf-8'))
-
         result = libkubo.P2PClose(
-            repo_path, proto_c, listen_addr_c, peer_id_c)
+            repo_path, c_str(name),
+            c_str(self._port_to_addr(listen_addr)),
+            c_str(self._port_to_addr(target_addr)),
+            c_bool(all), c_bool(listeners), c_bool(senders)
+        )
         return result
 
-    def close_all_tcp_forwarding_connections(self) -> int:
+    def close_all_senders(self) -> int:
         """
         Close all TCP forwarding connections.
 
         Returns:
             int: Number of forwarding connections closed
         """
-        return self.close_tcp_connection()
+        return self.close_tcp_connections(all=True, listeners=False, senders=True)
 
-    def close_all_tcp_listening_connections(self) -> int:
+    def close_all_listeners(self) -> int:
         """
         Close all TCP listening connections.
 
         Returns:
             int: Number of listening connections closed
         """
-        return self.close_tcp_connection()
+        return self.close_tcp_connections(all=True, listeners=True, senders=False)
+    def close_all(self) -> int:
+        """
+        Close all TCP connections.
 
+        Returns:
+            int: Number of listening connections closed
+        """
+        return self.close_tcp_connections(all=True, listeners=True, senders=True)
     def list_tcp_connections(self) -> Dict[str, List[Dict[str, str]]]:
         """
         List all active TCP p2p connections.
@@ -229,17 +229,18 @@ class NodeTcp(BaseTcp):
         """
 
         # Get the listeners and streams
-        listeners, streams = self.list_listeners()
+        listeners, forwarders, streams = self._list_connections()
 
         # Convert to dictionary format
         result = {
-            "LocalListeners": [listener.__dict__ for listener in listeners],
+            "Listens": [listener.__dict__ for listener in listeners],
+            "Forwards": [forwarder.__dict__ for forwarder in forwarders],
             "RemoteStreams": [stream.__dict__ for stream in streams]
         }
 
         return result
 
-    def list_listeners(self) -> Tuple[List[P2PMapping], List[P2PStream]]:
+    def _list_connections(self) -> Tuple[List[P2PMapping], List[P2PStream]]:
         """
         List all active P2P listeners and streams.
 
@@ -257,7 +258,7 @@ class NodeTcp(BaseTcp):
 
         # Convert the C string to a Python string and release memory
         result_str = from_c_str(result_ptr)
-        libkubo.free(result_ptr)
+        # libkubo.free(result_ptr)
 
         if not result_str:
             return [], []
@@ -268,11 +269,9 @@ class NodeTcp(BaseTcp):
         except json.JSONDecodeError:
             return [], []
 
-        # Extract all listeners (both local and remote)
-        listeners = []
-
         # Add local listeners
-        for item in result.get('LocalListeners', []):
+        listeners = []
+        for item in result.get('Listens', []):
             listener = P2PMapping(
                 name=item.get('Protocol', ''),
                 listen_address=item.get('ListenAddress', ''),
@@ -281,13 +280,14 @@ class NodeTcp(BaseTcp):
             listeners.append(listener)
 
         # Add remote listeners
-        for item in result.get('RemoteListeners', []):
+        forwarders = []
+        for item in result.get('Forwards', []):
             listener = P2PMapping(
                 name=item.get('Protocol', ''),
                 listen_address=item.get('ListenAddress', ''),
                 target_address=item.get('TargetAddress', '')
             )
-            listeners.append(listener)
+            forwarders.append(listener)
 
         # Extract active streams
         streams = []
@@ -299,7 +299,15 @@ class NodeTcp(BaseTcp):
             )
             streams.append(stream)
 
-        return listeners, streams
+        return listeners, forwarders,  streams
 
     def close(self):
         pass
+
+    def _port_to_addr(self, addr: int | str | None) -> str:
+        if not addr:
+            return ""
+        if isinstance(addr, int):
+            return f"/ip4/{self._node._ipfs_host_ip()}/tcp/{addr}"
+        else:
+            return addr

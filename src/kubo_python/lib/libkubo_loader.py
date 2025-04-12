@@ -41,3 +41,5 @@ def c_str(data:str|bytes):
     return ffi.new("char[]", data)
 def from_c_str(string_ptr):
     return ffi.string(string_ptr).decode('utf-8')
+def c_bool(value: bool):
+    return ffi.new("bool *", value)[0]

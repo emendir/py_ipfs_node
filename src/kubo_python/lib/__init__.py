@@ -1,1 +1,1 @@
-from .libkubo_loader import libkubo, c_str, from_c_str, ffi
+from .libkubo_loader import libkubo, c_str, from_c_str, ffi, c_bool
