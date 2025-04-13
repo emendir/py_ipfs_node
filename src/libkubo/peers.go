@@ -43,7 +43,7 @@ func ConnectToPeer(repoPath, peerAddr *C.char) C.int {
 	// Connect to the peer
 	err = api.Swarm().Connect(ctx, *peerInfo)
 	if err != nil {
-		log.Printf("ERROR: Error connecting to peer: %s\n", err)
+		log.Printf("ERROR: Error connecting to peer %s: %s\n", peerAddr, err)
 		return C.int(-3)
 	}
 
@@ -71,7 +71,7 @@ func ListPeers(repoPath *C.char) *C.char {
 	// Connect to the peer
 	peers, err := api.Swarm().Peers(ctx)
 	if err != nil {
-		log.Printf("ERROR: Error connecting to peer: %s\n", err)
+		log.Printf("ERROR: Error listing peers: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 	peer_ids := make([]string, len(peers))
@@ -109,7 +109,7 @@ func ListPeersIDs(repoPath *C.char) *C.char {
 	// Connect to the peer
 	peers, err := api.Swarm().Peers(ctx)
 	if err != nil {
-		log.Printf("ERROR: Error connecting to peer: %s\n", err)
+		log.Printf("ERROR: Error listing peer IDs: %s\n", err)
 		return C.CString("[]") // Return empty JSON array
 	}
 	peer_ids := make([]string, len(peers))

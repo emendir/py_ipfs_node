@@ -107,7 +107,7 @@ class IpfsNode(BaseClient):
                 repo_path = c_str(self._repo_path.encode('utf-8'))
                 print("Cleaning up node...")
                 libkubo.CleanupNode(repo_path)
-                print(f"Node for repo {self._repo_path} explicitly cleaned up")
+                # print(f"Node for repo {self._repo_path} explicitly cleaned up")
             except Exception as e:
                 print(f"Warning: Error cleaning up node: {e}")
 

@@ -117,9 +117,7 @@ class NodeFiles(BaseFiles):
             bool: True if the content was successfully retrieved, False otherwise.
         """
         try:
-            print(dest_path)
             dest_path = os.path.abspath(dest_path)
-            print(dest_path)
             repo_path = c_str(self._repo_path.encode('utf-8'))
             cid_c = c_str(cid.encode('utf-8'))
             dest_path_c = c_str(os.path.abspath(dest_path).encode('utf-8'))

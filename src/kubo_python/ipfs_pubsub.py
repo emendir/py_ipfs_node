@@ -19,7 +19,7 @@ class IPFSMessage:
     """
     Represents a message received from the IPFS pubsub system.
     """
-    from_peer: str
+    senderID: str
     """The peer ID of the message sender."""
 
     data: bytes
@@ -59,7 +59,7 @@ class IPFSMessage:
             if isinstance(data.get('seqno'), list):
                 seqno = bytes(data.get('seqno', []))
         return cls(
-            from_peer=data.get('from', ''),
+            senderID=data.get('from', ''),
             data=data_bytes,
             topic_id=data.get('topicID', ''),
             seqno=seqno,
@@ -75,7 +75,7 @@ class IPFSMessage:
             # Fall back to hex representation
             data_str = f"0x{self.data.hex()}"
 
-        return f"IPFSMessage(from={self.from_peer}, topic={self.topic_id}, data={data_str})"
+        return f"IPFSMessage(from={self.senderID}, topic={self.topic_id}, data={data_str})"
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
 
@@ -186,7 +186,6 @@ class IPFSSubscription:
             try:
                 msg = self.next_message(timeout=0.5)
                 if msg:
-                    print(type(msg))
                     callback(msg)
             except Exception as e:
                 # Just log the error and continue

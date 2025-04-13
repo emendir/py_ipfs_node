@@ -18,7 +18,7 @@ def test_connect():
 def test_findpeer():
     multi_addresses = pytest.node_2.peers.find(pytest.node_1.peer_id)
     print("MultiAdresses",multi_addresses)
-    if len (multi_addresses) > 1:
+    if len (multi_addresses) > 0:
         print("Success!")
     else:
         print("Failure.")
