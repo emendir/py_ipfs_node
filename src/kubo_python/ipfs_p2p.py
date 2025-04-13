@@ -2,53 +2,11 @@ import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
 from ipfs_toolkit_generics import BaseTcp
+from ipfs_toolkit_generics.tcp import SenderTunnel, ListenerTunnel, TunnelsList
 from .lib import libkubo, c_str, from_c_str, ffi, c_bool
 
 
-class P2PMapping:
-    """
-    Represents a mapping between a libp2p protocol name and a network address.
-    """
 
-    def __init__(self, name: str, listen_address: str, target_address: str):
-        """
-        Initialize a P2P mapping.
-
-        Args:
-            name: The protocol name used for the mapping.
-            listen_address: The listen address of the mapping.
-            target_address: The target address of the mapping.
-        """
-        self.name = name
-        self.listen_address = listen_address
-        self.target_address = target_address
-
-    def __str__(self) -> str:
-        """String representation of the mapping."""
-        return f"P2PMapping(name={self.name}, listen={self.listen_address}, target={self.target_address})"
-
-
-class P2PStream:
-    """
-    Represents a libp2p stream between peers.
-    """
-
-    def __init__(self, name: str, origin_address: str, target_address: str):
-        """
-        Initialize a P2P stream.
-
-        Args:
-            name: The protocol name used for the stream.
-            origin_address: The origin address of the stream.
-            target_address: The target address of the stream.
-        """
-        self.name = name
-        self.origin_address = origin_address
-        self.target_address = target_address
-
-    def __str__(self) -> str:
-        """String representation of the stream."""
-        return f"P2PStream(name={self.name}, origin={self.origin_address}, target={self.target_address})"
 
 
 class NodeTcp(BaseTcp):
@@ -62,6 +20,8 @@ class NodeTcp(BaseTcp):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
+        BaseTcp.__init__(self)
+
 
     def _enable_p2p(self) -> bool:
         """Enable p2p functionality in the IPFS configuration."""
@@ -74,7 +34,7 @@ class NodeTcp(BaseTcp):
             return False
         return True
 
-    def open_sender(self, name: str, listen_addr: int | str, target_peer_id: str) -> bool:
+    def open_sender(self, name: str, listen_addr: int | str, target_peer_id: str):
         """
         Forward local connections to a remote peer.
 
@@ -97,9 +57,16 @@ class NodeTcp(BaseTcp):
             c_str(self._port_to_addr(listen_addr).encode('utf-8')),
             c_str(target_peer_id.encode('utf-8'))
         )
-        return result > 0
+        if result > 0:
+            return
+        if result == -2:
+            print(f"Can't create sender {name} {listen_addr} {target_peer_id}")
+            raise Exception("IpfsNode.tcp.open_sender: failed to open sender")
+            
+        
+        raise Exception("IpfsNode.tcp.open_sender: failed to open sender")
 
-    def open_listener(self, name: str, target_addr: int | str) -> bool:
+    def open_listener(self, name: str, target_addr: int | str):
         """
         Listen for libp2p connections and forward them to a local TCP service.
 
@@ -116,7 +83,14 @@ class NodeTcp(BaseTcp):
             c_str(self._repo_path.encode('utf-8')),
             c_str(name.encode('utf-8')),
             c_str(self._port_to_addr(target_addr)))
-        return result > 0
+        if result > 0:
+            return
+        if result == -2:
+            print(f"Can't open listener {name} {target_addr}")
+            raise Exception("IpfsNode.tcp.open_sender: failed to open listener")
+            
+        
+        raise Exception("IpfsNode.tcp.open_sender: failed to open listener")
 
     def close_sender(self, name: str = None, port: int = None, peer_id: str = None) -> int:
         """
@@ -145,7 +119,7 @@ class NodeTcp(BaseTcp):
         Returns:
             int: Number of listening connections closed
         """
-        return self.close_tcp_connections(name, port, listeners=True, senders=False)
+        return self.close_tcp_connections(name, target_addr=port, listeners=True, senders=False)
 
     def close_streams(self, name: str, port: int | None = None, target_peer_id: str = "") -> bool:
         """
@@ -219,34 +193,10 @@ class NodeTcp(BaseTcp):
             int: Number of listening connections closed
         """
         return self.close_tcp_connections(all=True, listeners=True, senders=True)
-    def list_tcp_connections(self) -> Dict[str, List[Dict[str, str]]]:
+
+    def get_tunnels(self) ->TunnelsList:
         """
-        List all active TCP p2p connections.
-
-        Returns:
-            Dict[str, List[Dict[str, str]]]: Dictionary containing lists of local listeners and remote streams
-        """
-
-        # Get the listeners and streams
-        listeners, forwarders, streams = self._list_connections()
-
-        # Convert to dictionary format
-        result = {
-            "Listens": [listener.__dict__ for listener in listeners],
-            "Forwards": [forwarder.__dict__ for forwarder in forwarders],
-            "RemoteStreams": [stream.__dict__ for stream in streams]
-        }
-
-        return result
-
-    def _list_connections(self) -> Tuple[List[P2PMapping], List[P2PStream]]:
-        """
-        List all active P2P listeners and streams.
-
-        Returns:
-            Tuple[List[P2PMapping], List[P2PStream]]: A tuple containing two lists:
-            - The first list contains all local and remote listeners (P2PMapping objects)
-            - The second list contains all active streams (P2PStream objects)
+        List all active P2P tunnels.
         """
         result_ptr = libkubo.P2PListListeners(
             c_str(self._repo_path.encode('utf-8'))
@@ -271,9 +221,9 @@ class NodeTcp(BaseTcp):
         # Add local listeners
         listeners = []
         for item in result.get('Listens', []):
-            listener = P2PMapping(
+            listener = ListenerTunnel(
                 name=item.get('Protocol', ''),
-                listen_address=item.get('ListenAddress', ''),
+                # listen_address=item.get('ListenAddress', ''),
                 target_address=item.get('TargetAddress', '')
             )
             listeners.append(listener)
@@ -281,24 +231,24 @@ class NodeTcp(BaseTcp):
         # Add remote listeners
         forwarders = []
         for item in result.get('Forwards', []):
-            listener = P2PMapping(
+            listener = SenderTunnel(
                 name=item.get('Protocol', ''),
                 listen_address=item.get('ListenAddress', ''),
                 target_address=item.get('TargetAddress', '')
             )
             forwarders.append(listener)
 
-        # Extract active streams
-        streams = []
-        for item in result.get('Streams', []):
-            stream = P2PStream(
-                name=item.get('Protocol', ''),
-                origin_address=item.get('LocalAddr', ''),
-                target_address=item.get('RemoteAddr', '')
-            )
-            streams.append(stream)
+        # # Extract active streams
+        # streams = []
+        # for item in result.get('Streams', []):
+        #     stream = P2PStream(
+        #         name=item.get('Protocol', ''),
+        #         origin_address=item.get('LocalAddr', ''),
+        #         target_address=item.get('RemoteAddr', '')
+        #     )
+        #     streams.append(stream)
 
-        return listeners, forwarders,  streams
+        return TunnelsList(senders=forwarders, listeners=listeners)
 
 
     def _port_to_addr(self, addr: int | str | None) -> str:
