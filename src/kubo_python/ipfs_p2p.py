@@ -1,8 +1,7 @@
 import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
-from ipfs_toolkit_generics import BaseTcp
-from ipfs_toolkit_generics.tcp import SenderTunnel, ListenerTunnel, TunnelsList
+from ipfs_tk_generics.tcp import SenderTunnel, ListenerTunnel, TunnelsList, BaseTcp
 from .lib import libkubo, c_str, from_c_str, ffi, c_bool
 
 

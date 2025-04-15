@@ -15,7 +15,7 @@ from .ipfs_p2p import NodeTcp
 from .ipfs_files import NodeFiles
 from .ipfs_peers import NodePeers
 
-from ipfs_toolkit_generics import BaseClient
+from ipfs_tk_generics.client import BaseClient
 class IpfsNode(BaseClient):
     """
     Python wrapper for a Kubo IPFS node.

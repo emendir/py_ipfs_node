@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .lib import libkubo, c_str, c_bool, from_c_str, ffi
 
-from ipfs_toolkit_generics import BaseFiles
+from ipfs_tk_generics.files import BaseFiles
 
 
 class NodeFiles(BaseFiles):
