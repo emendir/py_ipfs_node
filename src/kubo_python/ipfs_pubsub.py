@@ -1,3 +1,4 @@
+from ipfs_tk_generics.pubsub import BasePubSub
 import os
 import tempfile
 import ctypes
@@ -76,11 +77,13 @@ class IPFSMessage:
             data_str = f"0x{self.data.hex()}"
 
         return f"IPFSMessage(from={self.senderID}, topic={self.topic_id}, data={data_str})"
+
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
 
     def __setitem__(self, key: str, value: Any) -> None:
         setattr(self, key, value)
+
 
 class IPFSSubscription:
     """
@@ -199,7 +202,7 @@ class IPFSSubscription:
             self._callback_thread = None
             self._stop_event.clear()
 
-    def subscribe(self, callback: Callable[[IPFSMessage], None]=None) -> None:
+    def subscribe(self, callback: Callable[[IPFSMessage], None] = None) -> None:
         """
         Set a callback to be called for each incoming message.
 
@@ -223,16 +226,18 @@ class IPFSSubscription:
             daemon=True
         )
         self._callback_thread.start()
+
     def terminate(self, *args, **kwargs):
         return self.close()
 
-from ipfs_toolkit_generics import BasePubSub
+
 class NodePubsub(BasePubSub):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
         self._subscriptions = {}  # Track active subscriptions by topic
-    def subscribe(self, topic: str, callback: Callable[[IPFSMessage], None]|None=None) -> IPFSSubscription:
+
+    def subscribe(self, topic: str, callback: Callable[[IPFSMessage], None] | None = None) -> IPFSSubscription:
         """
         Subscribe to a pubsub topic.
 
@@ -263,10 +268,10 @@ class NodePubsub(BasePubSub):
         if topic not in self._subscriptions:
             self._subscriptions[topic] = set()
         self._subscriptions[topic].add(subscription)
-        
+
         if callback:
             subscription.subscribe(callback)
-        
+
         return subscription
 
     def publish(self, topic: str, data: Union[str, bytes]) -> bool:
@@ -384,7 +389,7 @@ class NodePubsub(BasePubSub):
             return json.loads(json_data)
         except json.JSONDecodeError:
             return []
-            
+
     def _enable_pubsub_config(self):
         """Enable pubsub in the IPFS configuration."""
         repo_path = c_str(self._repo_path.encode('utf-8'))
@@ -453,7 +458,7 @@ class NodePubsub(BasePubSub):
             del self._subscriptions[topic]
 
         return result == 0
-    
+
     def terminate(self):
         # Close all active subscriptions
         for topic, subscriptions in list(self._subscriptions.items()):
@@ -464,5 +469,6 @@ class NodePubsub(BasePubSub):
                     print(f"Warning: Error closing subscription: {e}")
 
         self._subscriptions.clear()
+
     def __del__(self):
         self.terminate()

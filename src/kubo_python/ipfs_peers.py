@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .lib import libkubo, c_str, from_c_str, ffi
 DEF_FIND_TIMEOUT=10
-from ipfs_toolkit_generics import BasePeers
+from ipfs_tk_generics.peers import BasePeers
 class NodePeers(BasePeers):
     def __init__(self, node):
         self._node = node
