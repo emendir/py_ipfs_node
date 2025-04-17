@@ -13,7 +13,7 @@ PubSub (Publish/Subscribe) is a messaging pattern where publishers send messages
 PubSub is enabled by default when creating an online IPFS node. You can explicitly control this with the `enable_pubsub` parameter:
 
 ```python
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 # Create a node with pubsub enabled (default)
 node = IpfsNode(repo_path='/path/to/repo', enable_pubsub=True)

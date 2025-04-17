@@ -16,7 +16,7 @@ import tempfile
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 def main():
     # Create a temporary file for the example

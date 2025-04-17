@@ -16,14 +16,14 @@ export TOOLCHAIN=$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64
 export CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
 
 # Clean old files
-rm -f ../kubo_python/lib/libkubo_android_arm64.so ../kubo_python/lib/libkubo_android_arm64.h
+rm -f ../ipfs_node/libkubo/libkubo_android_arm64.so ../ipfs_node/libkubo/libkubo_android_arm64.h
 
 echo "Building libkubo for Android arm64..."
 go mod tidy
-go build -v -buildmode=c-shared -o ../kubo_python/lib/libkubo_android_arm64.so .
+go build -v -buildmode=c-shared -o ../ipfs_node/libkubo/libkubo_android_arm64.so .
 
 echo "Build completed"
-ls -la ../kubo_python/lib/libkubo_android_arm64.so
+ls -la ../ipfs_node/libkubo/libkubo_android_arm64.so
 
 exit 0
 """

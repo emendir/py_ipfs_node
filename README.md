@@ -26,7 +26,7 @@ Assuming that it proves to be a reliable way of working in python, this library 
 ## Installation
 
 ```bash
-pip install kubo_python
+pip install ipfs_node
 ```
 
 ## Dev Requirements
@@ -40,7 +40,7 @@ pip install kubo_python
 ### Working with Files
 
 ```python
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 # Create a new node with a temporary repository
 with IpfsNode.ephemeral() as node:
@@ -55,7 +55,7 @@ with IpfsNode.ephemeral() as node:
 ### Using PubSub
 
 ```python
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 with IpfsNode.ephemeral() as node:
     # Subscribe to a topic
@@ -78,7 +78,7 @@ with IpfsNode.ephemeral() as node:
 ### Using P2P Stream Mounting
 
 ```python
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 # Create an IPFS node
 with IpfsNode.ephemeral() as node:

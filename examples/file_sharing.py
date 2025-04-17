@@ -18,7 +18,7 @@ from pathlib import Path
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python import IpfsNode
+from ipfs_node import IpfsNode
 
 def add_files(node, path, recursive=True):
     """Add a file or directory to IPFS."""

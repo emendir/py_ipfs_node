@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
-from .lib import libkubo, c_str, from_c_str, ffi
+from .libkubo import libkubo, c_str, from_c_str, ffi
 from .ipfs_tunnels import NodeTunnels
 from .ipfs_files import NodeFiles
 from .ipfs_peers import NodePeers
