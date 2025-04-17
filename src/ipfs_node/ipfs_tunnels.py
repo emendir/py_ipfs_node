@@ -103,7 +103,7 @@ class NodeTunnels(BaseTunnels):
         Returns:
             int: Number of forwarding connections closed
         """
-        if not peer_id.startswith("/p2p/"):
+        if peer_id and not peer_id.startswith("/p2p/"):
             peer_id = f"/p2p/{peer_id}"
         return self.close_tcp_connections(name, port, peer_id, senders=True, listeners=False)
 
