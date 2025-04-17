@@ -100,8 +100,8 @@ class DevelopCommand(develop):
 pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
-    name="kubo-python",
-    version="0.1.5",
+    name="ipfs_node",
+    version="0.1.6",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
