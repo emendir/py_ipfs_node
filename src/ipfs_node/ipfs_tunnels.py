@@ -2,7 +2,7 @@ import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
 from ipfs_tk_generics.tunnels import SenderTunnel, ListenerTunnel, TunnelsList, BaseTunnels
-from .libkubo import libkubo, c_str, from_c_str, ffi, c_bool
+from libkubo import libkubo, c_str, from_c_str, ffi, c_bool
 
 
 

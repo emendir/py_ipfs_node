@@ -1,4 +1,4 @@
-module github.com/yourusername/kubo-python/libkubo
+module github.com/emendir/py_ipfs_node/libkubo
 
 go 1.19
 

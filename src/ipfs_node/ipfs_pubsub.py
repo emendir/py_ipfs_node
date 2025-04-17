@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 import base64
 from base64 import urlsafe_b64decode, urlsafe_b64encode
-from .libkubo import libkubo, c_str, from_c_str, ffi
+from libkubo import libkubo, c_str, from_c_str, ffi
 
 
 @dataclass
