@@ -44,7 +44,7 @@ pip install kubo-python
 
 3. If installation fails because of Go compilation errors, you can manually build the Go library:
    ```bash
-   rm -f src/kubo_python/lib/libkubo* # OPTIONAL: Remove the compiled library
+   rm -f src/ipfs_node/lib/libkubo* # OPTIONAL: Remove the compiled library
    
    ./src/libkubo/compile_linux.sh  # Linux
    ./src/libkubo/compile_android.sh  # Android

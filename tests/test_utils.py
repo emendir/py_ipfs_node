@@ -9,7 +9,7 @@ import os
 # Add the parent directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from kubo_python.utils import cid_utils, peer_utils
+from ipfs_node.utils import cid_utils, peer_utils
 
 class TestCIDUtils(unittest.TestCase):
     """Tests for CID utilities."""

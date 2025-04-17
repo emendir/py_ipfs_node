@@ -28,7 +28,7 @@ from pathlib import Path
 
 # Add the parent directory to the path so we can import the module
 sys.path.append(str(Path(__file__).parent.parent))
-from src.kubo_python import IpfsNode
+from src.ipfs_node import IpfsNode
 
 def echo_server(port=8765):
     """Simple echo server that listens on the given port."""

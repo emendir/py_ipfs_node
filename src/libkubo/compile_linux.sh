@@ -9,14 +9,14 @@ set -e # Exit if any command fails
 set -x # Print commands for debugging
 
 # Clean old files
-rm -f ../kubo_python/lib/libkubo_linux_x86_64.so ../kubo_python/lib/libkubo_linux_x86_64.h
+rm -f ../ipfs_node/libkubo/libkubo_linux_x86_64.so ../ipfs_node/libkubo/libkubo_linux_x86_64.h
 
 echo "Building libkubo for Linux x86_64..."
 go mod tidy
-go build -v -buildmode=c-shared -o ../kubo_python/lib/libkubo_linux_x86_64.so .
+go build -v -buildmode=c-shared -o ../ipfs_node/libkubo/libkubo_linux_x86_64.so .
 
 echo "Build completed"
-ls -la ../kubo_python/lib/libkubo_linux_x86_64.so
+ls -la ../ipfs_node/libkubo/libkubo_linux_x86_64.so
 
 exit 0
 """

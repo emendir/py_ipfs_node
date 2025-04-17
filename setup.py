@@ -30,9 +30,9 @@ def compile_go_library():
     if not os.path.exists(libkubo_dir):
         os.makedirs(libkubo_dir)
 
-    # Create the lib directory if it doesn't exist
+    # Create the libkubo directory if it doesn't exist
     lib_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'src', 'kubo_python', 'lib')
+        os.path.abspath(__file__)), 'src', 'ipfs_node', 'libkubo')
     if not os.path.exists(lib_dir):
         os.makedirs(lib_dir)
 
@@ -105,7 +105,7 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        'kubo_python': ['lib/*'],
+        'ipfs_node': ['libkubo/*'],
     },
     cmdclass={
         'build_py': BuildGoLibraryCommand,
@@ -117,10 +117,10 @@ setup(
     ],
     author="Emendir",
     author_email="",
-    description="Python bindings for Kubo (Go-IPFS)",
+    description="Run an IPFS node inside of python using kubo as a library.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/kubo-python",
+    url="https://github.com/emendir/py_ipfs_node",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

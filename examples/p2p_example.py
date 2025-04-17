@@ -20,7 +20,7 @@ from pathlib import Path
 # Add the parent directory to the Python path so we can import the library
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.kubo_python import IpfsNode, NodeStreamMounting
+from src.ipfs_node import IpfsNode, NodeStreamMounting
 
 def main():
     parser = argparse.ArgumentParser(description="Demo of libp2p stream mounting")
