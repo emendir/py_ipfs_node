@@ -1,14 +1,14 @@
 import ctypes
 import json
 from typing import List, Dict, Optional, Tuple, Any, Union
-from ipfs_tk_generics.tcp import SenderTunnel, ListenerTunnel, TunnelsList, BaseTcp
+from ipfs_tk_generics.tunnels import SenderTunnel, ListenerTunnel, TunnelsList, BaseTunnels
 from .lib import libkubo, c_str, from_c_str, ffi, c_bool
 
 
 
 
 
-class NodeTcp(BaseTcp):
+class NodeTunnels(BaseTunnels):
     """
     Provides P2P stream mounting functionality for IPFS nodes.
 
@@ -19,7 +19,7 @@ class NodeTcp(BaseTcp):
     def __init__(self, node):
         self._node = node
         self._repo_path = self._node._repo_path
-        BaseTcp.__init__(self)
+        BaseTunnels.__init__(self)
 
 
     def _enable_p2p(self) -> bool:
@@ -60,10 +60,10 @@ class NodeTcp(BaseTcp):
             return
         if result == -2:
             print(f"Can't create sender {name} {listen_addr} {target_peer_id}")
-            raise Exception("IpfsNode.tcp.open_sender: failed to open sender")
+            raise Exception("IpfsNode.tunnels.open_sender: failed to open sender: bind: address already in use")
             
         
-        raise Exception("IpfsNode.tcp.open_sender: failed to open sender")
+        raise Exception("IpfsNode.tunnels.open_sender: failed to open sender")
 
     def open_listener(self, name: str, target_addr: int | str):
         """
@@ -86,10 +86,10 @@ class NodeTcp(BaseTcp):
             return
         if result == -2:
             print(f"Can't open listener {name} {target_addr}")
-            raise Exception("IpfsNode.tcp.open_sender: failed to open listener")
+            raise Exception("IpfsNode.tunnels.open_sender: failed to open listener")
             
         
-        raise Exception("IpfsNode.tcp.open_sender: failed to open listener")
+        raise Exception("IpfsNode.tunnels.open_sender: failed to open listener")
 
     def close_sender(self, name: str = None, port: int = None, peer_id: str = None) -> int:
         """

@@ -84,17 +84,17 @@ from kubo_python import IpfsNode
 with IpfsNode.ephemeral() as node:
 
     # Example 1: Listen for connections on a protocol and forward them to a local service
-    node.tcp.open_listener("my-service", "127.0.0.1:8080")
+    node.tunnels.open_listener("my-service", "127.0.0.1:8080")
 
     # Example 2: Forward local connections to a remote peer
-    node.tcp.open_sender("their-service", "127.0.0.1:9090", "QmPeerID...")
+    node.tunnels.open_sender("their-service", "127.0.0.1:9090", "QmPeerID...")
 
     # List active listeners and streams
-    listeners, streams = node.tcp.list_listeners()
+    listeners, streams = node.tunnels.list_listeners()
 
     # Close specific connections when done
-    node.tcp.close_listener("my-service")
-    node.tcp.close_sender("their-service")
+    node.tunnels.close_listener("my-service")
+    node.tunnels.close_sender("their-service")
 ```
 
 ## Documentation

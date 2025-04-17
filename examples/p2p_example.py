@@ -63,7 +63,7 @@ def main():
         if args.listen:
             # Create a TCP listening connection
             print(f"Creating a TCP listening connection on protocol '{args.protocol}' and port {args.port}")
-            result = node.tcp.open_listener(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}")
+            result = node.tunnels.open_listener(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}")
             if result:
                 print("✓ Listening connection created successfully")
             else:
@@ -93,7 +93,7 @@ def main():
             # Create a TCP forwarding connection
             print(f"Creating a TCP forwarding connection to peer {args.peer_id}")
             print(f"Protocol: {args.protocol}, Local port: {args.port}")
-            result = node.tcp.open_sender(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}", f"{args.peer_id}")
+            result = node.tunnels.open_sender(args.protocol, f"/ip4/127.0.0.1/tcp/{args.port}", f"{args.peer_id}")
             if result:
                 print("✓ Forwarding connection created successfully")
             else:
@@ -122,7 +122,7 @@ def main():
     finally:
         # Clean up
         if args.listen or args.forward:
-            # node.tcp.close_streams(args.protocol)
+            # node.tunnels.close_streams(args.protocol)
             print(f"Skipped P2P connection for protocol: {args.protocol}")
         
         # Close the IPFS node
