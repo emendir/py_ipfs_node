@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
 from .ipfs_pubsub import IPFSMessage, IPFSSubscription, NodePubsub
 from .lib import libkubo, c_str, from_c_str, ffi
-from .ipfs_p2p import NodeTcp
+from .ipfs_tunnels import NodeTunnels
 from .ipfs_files import NodeFiles
 from .ipfs_peers import NodePeers
 
-from ipfs_tk_generics.client import BaseClient
-class IpfsNode(BaseClient):
+from ipfs_tk_generics.client import IpfsClient
+class IpfsNode(IpfsClient):
     """
     Python wrapper for a Kubo IPFS node.
 
@@ -56,7 +56,7 @@ class IpfsNode(BaseClient):
         if self._online:
             self._peer_id = self.get_node_id()
         self._pubsub = NodePubsub(self)
-        self._tcp = NodeTcp(self)
+        self._tunnels = NodeTunnels(self)
         self._files = NodeFiles(self)
         self._peers = NodePeers(self)
         
@@ -64,8 +64,8 @@ class IpfsNode(BaseClient):
         if self._enable_pubsub and self._online:
             self.pubsub._enable_pubsub_config()
     @property
-    def tcp(self)->NodeTcp:
-        return self._tcp
+    def tunnels(self)->NodeTunnels:
+        return self._tunnels
     @property
     def pubsub(self)->NodePubsub:
         return self._pubsub
@@ -98,7 +98,7 @@ class IpfsNode(BaseClient):
     def terminate(self):
         """Close the IPFS node and clean up resources."""
         self._pubsub.terminate()
-        self._tcp.terminate()
+        self._tunnels.terminate()
         self._files.terminate()
         self._peers.terminate()
         # Force cleanup of the node in Go

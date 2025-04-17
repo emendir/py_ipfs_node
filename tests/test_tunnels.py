@@ -45,7 +45,7 @@ def run():
     start_echo_server(echo_port)
 
     # Listen for incoming P2P connections on the server
-    server_node.tcp.open_listener(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
+    server_node.tunnels.open_listener(protocol, f"/ip4/127.0.0.1/tcp/{echo_port}")
     print(f"[SERVER] Listening for P2P on protocol {protocol}")
 
     # Setup client node
@@ -59,7 +59,7 @@ def run():
 
     # Forward P2P traffic from client to server
     client_port = 8888
-    client_node.tcp.open_sender(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
+    client_node.tunnels.open_sender(protocol, f"/ip4/127.0.0.1/tcp/{client_port}", server_node.peer_id)
     print(f"[CLIENT] Forwarding {protocol} -> server {server_node.peer_id}")
 
     # Allow some time for things to set up
@@ -80,9 +80,9 @@ def run():
     assert response == test_message, "Response did not match sent message!"
 
     # Clean up
-    # server_node.tcp.close_streams(protocol)
+    # server_node.tunnels.close_streams(protocol)
     server_node.terminate()
-    # client_node.tcp.close_streams(protocol)
+    # client_node.tunnels.close_streams(protocol)
     client_node.terminate()
     print("[TEST] Test passed and cleaned up successfully.")
 

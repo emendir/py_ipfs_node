@@ -62,7 +62,7 @@ class NodePeers(BasePeers):
             )
             
             return json.loads(data)
-    def is_peer_connected(self, peer_id:str, *args, **kwargs):
+    def is_connected(self, peer_id:str, *args, **kwargs):
         #TODO: replace with ping
         return peer_id in self.list_ids()
     def terminate(self):
