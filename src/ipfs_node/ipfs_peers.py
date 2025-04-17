@@ -9,7 +9,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union, List, Dict, Any, Callable, Tuple, Iterator, Set
-from .libkubo import libkubo, c_str, from_c_str, ffi
+from libkubo import libkubo, c_str, from_c_str, ffi
 DEF_FIND_TIMEOUT=10
 from ipfs_tk_generics.peers import BasePeers
 class NodePeers(BasePeers):
