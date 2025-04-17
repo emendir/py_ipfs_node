@@ -21,15 +21,15 @@ Before installing the Kubo Python library, ensure you have the following prerequ
 ### Option 1: Install from PyPI (Not available yet)
 
 ```bash
-pip install kubo-python
+pip install ipfs_node
 ```
 
 ### Option 2: Install from Source
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/kubo-python.git
-   cd kubo-python
+   git clone https://github.com/emendir/py_ipfs_node.git
+   cd ipfs_node
    ```
 
 2. Install the package:
