@@ -31,7 +31,7 @@ pip install ipfs_node
 
 ## Dev Requirements
 
-- Go 1.19
+- Go 1.19+
 - Python 3.7+
 - IPFS Kubo dependencies
 
@@ -45,7 +45,7 @@ from ipfs_node import IpfsNode
 # Create a new node with a temporary repository
 with IpfsNode.ephemeral() as node:
     # Add a file to IPFS
-    cid = node.files.publish("README.md")
+    cid = node.files.add_file("README.md")
     print(f"Added file with CID: {cid}")
     
     # Retrieve a file from IPFS
