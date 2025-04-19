@@ -30,12 +30,6 @@ def compile_go_library():
     if not os.path.exists(libkubo_dir):
         os.makedirs(libkubo_dir)
 
-    # Create the libkubo directory if it doesn't exist
-    lib_dir = os.path.join(os.path.dirname(
-        os.path.abspath(__file__)), 'src', 'ipfs_node', 'libkubo')
-    if not os.path.exists(lib_dir):
-        os.makedirs(lib_dir)
-
     # Determine the output file extension based on platform
     if platform.system() == 'Windows':
         lib_name = 'libkubo.dll'
@@ -55,7 +49,7 @@ def compile_go_library():
         print("Continuing with existing code...")
 
     # Check if the output library already exists
-    output_path = os.path.join(lib_dir, lib_name)
+    output_path = os.path.join(libkubo_dir, lib_name)
     if os.path.exists(output_path):
         print(f"Shared library already exists at {output_path}")
         return
@@ -101,12 +95,13 @@ pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
     name="ipfs_node",
-    version="0.1.6",
+    version="0.1.7",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        'ipfs_node': ['libkubo/*'],
+        'libkubo': ['*.so', '*.h'],
     },
+    include_package_data=True,
     cmdclass={
         'build_py': BuildGoLibraryCommand,
         'install': InstallCommand,
