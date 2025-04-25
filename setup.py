@@ -95,7 +95,7 @@ pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
     name="ipfs_node",
-    version="0.1.7",
+    version="0.1.8",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
@@ -109,6 +109,7 @@ setup(
     },
     install_requires=[
         'cffi>=1.15.0',
+        'ipfs_tk'
     ],
     author="Emendir",
     author_email="",
