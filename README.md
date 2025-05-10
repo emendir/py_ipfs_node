@@ -13,12 +13,12 @@ This library provides Python bindings for [Kubo](https://github.com/ipfs/kubo), 
 - Publish and subscribe to IPFS PubSub topics
 - Mount and connect to remote TCP services via libp2p
 
-## Project Status
+## Project Status **EXPERIMENTAL**
 
 This library is very early in its development, and is published as a proof-of-concept that it is feasible to write a python wrapper around kubo (Go-IPFS) to run IPFS nodes from within python.
 Much of the code is LLM-generated, and code coverage is poor.
 
-The API structure of this library WILL CHANGE in the near future!
+The API of this library WILL CHANGE in the near future!
 
 So far this library has been tested on Linux x86 64-bit and Android ARM 64-bit (in Termux & in Kivy).
 Assuming that it proves to be a reliable way of working in python, this library will be developed to maturity and maintained.
