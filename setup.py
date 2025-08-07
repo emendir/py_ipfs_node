@@ -16,34 +16,32 @@ def compile_go_library():
     print("Compiling Go shared library...")
 
     # Define Go source directory
-    libkubo_dir = os.path.join(PROJ_DIR, 'src', 'libkubo')
+    libkubo_dir = os.path.join(PROJ_DIR, "src", "libkubo")
 
     # Check if Go is installed
     try:
         subprocess.check_call(
-            ['go', 'version'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ["go", "version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
     except (subprocess.SubprocessError, FileNotFoundError):
-        raise RuntimeError(
-            "Go compiler not found. Please install Go 1.19 or later.")
+        raise RuntimeError("Go compiler not found. Please install Go 1.19 or later.")
 
     # Build shared library for the current platform
     if not os.path.exists(libkubo_dir):
         os.makedirs(libkubo_dir)
 
     # Determine the output file extension based on platform
-    if platform.system() == 'Windows':
-        lib_name = 'libkubo.dll'
-    elif platform.system() == 'Darwin':
-        lib_name = 'libkubo.dylib'
+    if platform.system() == "Windows":
+        lib_name = "libkubo.dll"
+    elif platform.system() == "Darwin":
+        lib_name = "libkubo.dylib"
     else:
-        lib_name = 'libkubo_linux_x86_64.so'
+        lib_name = "libkubo_linux_x86_64.so"
 
     # Get Kubo library source code if not already fetched
     try:
-        if not os.path.exists(os.path.join(libkubo_dir, 'go.sum')):
-            subprocess.check_call([
-                'go', 'mod', 'tidy'
-            ], cwd=libkubo_dir)
+        if not os.path.exists(os.path.join(libkubo_dir, "go.sum")):
+            subprocess.check_call(["go", "mod", "tidy"], cwd=libkubo_dir)
     except subprocess.CalledProcessError as e:
         print(f"Error fetching Go dependencies: {e}")
         print("Continuing with existing code...")
@@ -55,11 +53,7 @@ def compile_go_library():
         return
     print("Compiling libkubo...")
     # Build the shared library
-    build_cmd = [
-        'go', 'build', '-buildmode=c-shared',
-        '-o', output_path,
-        libkubo_dir
-    ]
+    build_cmd = ["go", "build", "-buildmode=c-shared", "-o", output_path, libkubo_dir]
 
     print(f"Running: {' '.join(build_cmd)}")
     subprocess.check_call(build_cmd, cwd=libkubo_dir)
@@ -99,18 +93,15 @@ setup(
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        'libkubo': ['*.so', '*.h'],
+        "libkubo": ["*.so", "*.h"],
     },
     include_package_data=True,
     cmdclass={
-        'build_py': BuildGoLibraryCommand,
-        'install': InstallCommand,
-        'develop': DevelopCommand,
+        "build_py": BuildGoLibraryCommand,
+        "install": InstallCommand,
+        "develop": DevelopCommand,
     },
-    install_requires=[
-        'cffi>=1.15.0',
-        'ipfs_tk'
-    ],
+    install_requires=["cffi>=1.15.0", "ipfs_tk"],
     author="Emendir",
     author_email="",
     description="Run an IPFS node inside of python using kubo as a library.",
@@ -119,8 +110,8 @@ setup(
     url="https://github.com/emendir/py_ipfs_node",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: CC0 License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.7',
+    python_requires=">=3.7",
 )

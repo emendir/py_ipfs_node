@@ -23,6 +23,17 @@ The API of this library WILL CHANGE in the near future!
 So far this library has been tested on Linux x86 64-bit and Android ARM 64-bit (in Termux & in Kivy).
 Assuming that it proves to be a reliable way of working in python, this library will be developed to maturity and maintained.
 
+## Roadmap
+
+[py_ipfs_node](https://github.com/emendir/py_ipfs_node), will be incorporated into [ipfs_toolkit](https://github.com/emendir/IPFS-Toolkit-Python) [when py_ipfs_node's API has stabilised](https://github.com/emendir/py_ipfs_node/issues/1).
+
+[ipfs_toolkit](https://github.com/emendir/IPFS-Toolkit-Python) will become a multimodal IPFS library with a unified API for alternative modes of using IPFS:
+- running an embedded IPFS node
+- interacting with a separate IPFS node via its HTTP RPC
+
+You can check out a prototype version of the combination of these two libraries under the `kubo_python` branch of the IPFS-Toolkit repo:
+https://github.com/emendir/IPFS-Toolkit-Python/tree/kubo_python
+
 ## Installation
 
 ```bash
@@ -114,6 +125,3 @@ with IpfsNode.ephemeral() as node:
 - [P2P Stream Mounting](examples/p2p_example.py)
 - [P2P Socket Communication](examples/p2p_socket_example.py)
 
-## License
-
-MIT License
