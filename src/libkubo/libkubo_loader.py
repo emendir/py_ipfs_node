@@ -1,24 +1,53 @@
+import os
 from cffi import FFI
 import platform
 from pathlib import Path
+
 ffi = FFI()
 
 
-# Determine library name based on platform
-if platform.system() == 'Windows':
-    lib_name = 'libkubo.dll'
-    header_name = 'libkubo.h'
-elif platform.system() == 'Darwin':
-    lib_name = 'libkubo.dylib'
-    header_name = 'libkubo.h'
-else:
-    if "aarch64" == platform.machine():
-        lib_name = "libkubo_android_arm64.so"
-        header_name = "libkubo_android_arm64.h"
-    else:
-        lib_name = 'libkubo_linux_x86_64.so'
-        header_name = 'libkubo_linux_x86_64.h'
+def is_android() -> bool:
+    """Check if OS is android."""
+    if "ANDROID_ROOT" in os.environ and "ANDROID_DATA" in os.environ:
+        return True
+    return (
+        "android" in platform.release().lower()
+        or "android" in platform.version().lower()
+    )
 
+
+system = platform.system()
+machine = platform.machine().lower()
+
+if system == "Windows":
+    lib_name = "libkubo.dll"
+    header_name = "libkubo.h"
+
+elif system == "Darwin":
+    lib_name = "libkubo.dylib"
+    header_name = "libkubo.h"
+
+elif system == "Linux":
+    if is_android():
+        if machine in ("aarch64", "arm64"):
+            lib_name = "libkubo_android_arm64.so"
+            header_name = "libkubo_android_arm64.h"
+        else:
+            raise RuntimeError(f"Unsupported Android arch: {machine}")
+    else:
+        if machine in ("x86_64", "amd64"):
+            lib_name = "libkubo_linux_x86_64.so"
+            header_name = "libkubo_linux_x86_64.h"
+        elif machine in ("aarch64", "arm64"):
+            lib_name = "libkubo_linux_arm64.so"
+            header_name = "libkubo_linux_arm64.h"
+        elif machine.startswith("armv7") or machine == "armv7l":
+            lib_name = "libkubo_linux_armhf.so"
+            header_name = "libkubo_linux_armhf.h"
+        else:
+            raise RuntimeError(f"Unsupported Linux architecture: {machine}")
+else:
+    raise RuntimeError(f"Unsupported platform: {system} {machine}")
 
 
 # Get the absolute path to the library
@@ -35,11 +64,15 @@ ffi.set_source("libkubo", None)
 libkubo = ffi.dlopen(lib_path)
 
 
-def c_str(data:str|bytes):
+def c_str(data: str | bytes):
     if isinstance(data, str):
         data = data.encode()
     return ffi.new("char[]", data)
+
+
 def from_c_str(string_ptr):
-    return ffi.string(string_ptr).decode('utf-8')
+    return ffi.string(string_ptr).decode("utf-8")
+
+
 def c_bool(value: bool):
     return ffi.new("bool *", value)[0]
