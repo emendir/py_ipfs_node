@@ -110,7 +110,6 @@ setup(
     url="https://github.com/emendir/py_ipfs_node",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: CC0 License",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.7",
