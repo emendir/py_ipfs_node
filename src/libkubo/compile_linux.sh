@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
-set -x
+# set -x
 
 # Assert Go version
 REQUIRED_GO_VERSION="1.19"
 INSTALLED_GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
 
 # Compare versions using sort -V (version-aware)
-if [ "$(printf '%s\n' "$REQUIRED_GO_VERSION" "$INSTALLED_GO_VERSION" | sort -V | head -n1)" != "$REQUIRED_GO_VERSION" ]; then
-  echo "Error: Go $REQUIRED_GO_VERSION or higher is required. Installed: $INSTALLED_GO_VERSION"
+if [ "$INSTALLED_GO_VERSION" != "$REQUIRED_GO_VERSION" ]; then
+  echo "Error: Go $REQUIRED_GO_VERSION is required. Installed: $INSTALLED_GO_VERSION"
   exit 1
 fi
 

@@ -89,7 +89,7 @@ pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
 
 setup(
     name="ipfs_node",
-    version="0.1.9",
+    version="0.1.10",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={

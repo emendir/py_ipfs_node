@@ -20,8 +20,16 @@ system = platform.system()
 machine = platform.machine().lower()
 
 if system == "Windows":
-    lib_name = "libkubo.dll"
-    header_name = "libkubo.h"
+    if machine in ("x86_64", "amd64"):
+        lib_name = "libkubo_windows_x86_64.dll"
+        # header_name = "libkubo_windows_x86_64.h"
+        # windows header causes problems, so parse linux header instead
+        header_name = "libkubo_linux_x86_64.h"
+    # elif machine in ("aarch64", "arm64"):
+    #     lib_name = "libkubo_windows_arm64.dll"
+    #     header_name = "libkubo_windows_arm64.h"
+    else:
+        raise RuntimeError(f"Unsupported Windows architecture: {machine}")
 
 elif system == "Darwin":
     lib_name = "libkubo.dylib"
@@ -49,6 +57,8 @@ elif system == "Linux":
 else:
     raise RuntimeError(f"Unsupported platform: {system} {machine}")
 
+print(lib_name)
+print(header_name)
 
 # Get the absolute path to the library
 lib_path = str(Path(__file__).parent / lib_name)

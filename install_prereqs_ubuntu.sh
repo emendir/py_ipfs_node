@@ -21,3 +21,6 @@ gvm use go$GO_VERSION
 
 # install cross-compilation tools for ARM
 sudo apt -y install gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf
+
+# install cross-compilation tools for Windows (arm & x86)
+sudo apt-get install gcc-mingw-w64
