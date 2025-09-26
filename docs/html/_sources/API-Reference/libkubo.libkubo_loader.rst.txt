@@ -1,0 +1,7 @@
+libkubo.libkubo\_loader module
+==============================
+
+.. automodule:: libkubo.libkubo_loader
+   :members:
+   :show-inheritance:
+   :undoc-members:

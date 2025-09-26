@@ -1,0 +1,21 @@
+libkubo package
+===============
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   libkubo.libkubo_android_28_arm64_v8a
+   libkubo.libkubo_linux_arm64
+   libkubo.libkubo_linux_x86_64
+   libkubo.libkubo_loader
+
+Module contents
+---------------
+
+.. automodule:: libkubo
+   :members:
+   :show-inheritance:
+   :undoc-members:

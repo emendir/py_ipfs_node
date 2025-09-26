@@ -1,0 +1,7 @@
+libkubo.libkubo\_android\_28\_arm64\_v8a module
+===============================================
+
+.. automodule:: libkubo.libkubo_android_28_arm64_v8a
+   :members:
+   :show-inheritance:
+   :undoc-members:

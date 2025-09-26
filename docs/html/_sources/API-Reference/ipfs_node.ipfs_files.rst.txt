@@ -1,0 +1,7 @@
+ipfs\_node.ipfs\_files module
+=============================
+
+.. automodule:: ipfs_node.ipfs_files
+   :members:
+   :show-inheritance:
+   :undoc-members:

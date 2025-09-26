@@ -1,0 +1,30 @@
+ipfs\_node package
+==================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ipfs_node.utils
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   ipfs_node.ipfs_files
+   ipfs_node.ipfs_node
+   ipfs_node.ipfs_peers
+   ipfs_node.ipfs_pubsub
+   ipfs_node.ipfs_tunnels
+
+Module contents
+---------------
+
+.. automodule:: ipfs_node
+   :members:
+   :show-inheritance:
+   :undoc-members:

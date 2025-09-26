@@ -1,0 +1,7 @@
+ipfs\_node.ipfs\_pubsub module
+==============================
+
+.. automodule:: ipfs_node.ipfs_pubsub
+   :members:
+   :show-inheritance:
+   :undoc-members:
