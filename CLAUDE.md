@@ -8,8 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -e .
 
 # Rebuild Go library manually if needed
-./src/libkubo/compile_linux.sh  # Linux
-./src/libkubo/compile_android.sh  # Android
+./compile/compile.sh linux    # Linux
+./compile/compile.sh android  # Android
+./compile/compile.sh current  # Current platform
 
 # Run all tests
 python -m unittest discover tests

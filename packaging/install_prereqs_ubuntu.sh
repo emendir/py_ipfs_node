@@ -1,4 +1,10 @@
 #!/bin/bash
+
+set -euo pipefail # Exit if any command fails
+
+# the absolute path of this script's directory
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 GO_VERSION=1.19
 
 ## Install some Go version

@@ -3,10 +3,13 @@
 
 # the absolute path of this script's directory
 SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-cd $SCRIPT_DIR
 
-set -e # Exit if any command fails
-set -x # Print commands for debugging
+# Navigate to project root, then to libkubo source
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+LIBKUBO_DIR="$PROJECT_ROOT/src/libkubo"
+cd "$LIBKUBO_DIR"
+
+set -euo pipefail # Exit if any command fails
 
 # Android NDK version constants
 ANDROID_API_LEVEL="28"

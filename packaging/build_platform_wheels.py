@@ -13,7 +13,8 @@ import platform
 import shutil
 from pathlib import Path
 
-PROJ_DIR = Path(__file__).parent
+# Script is in /packaging directory, so project root is parent
+PROJ_DIR = Path(__file__).parent.parent
 LIBKUBO_DIR = PROJ_DIR / "src" / "libkubo"
 DIST_DIR = PROJ_DIR / "dist"
 

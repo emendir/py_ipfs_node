@@ -1,6 +1,14 @@
 #!/bin/bash
-set -e
-# set -x
+
+set -euo pipefail # Exit if any command fails
+
+# the absolute path of this script's directory
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
+# Navigate to project root, then to libkubo source
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+LIBKUBO_DIR="$PROJECT_ROOT/src/libkubo"
+cd "$LIBKUBO_DIR"
 
 # Assert Go version
 REQUIRED_GO_VERSION="1.19"
@@ -11,9 +19,6 @@ if [ "$INSTALLED_GO_VERSION" != "$REQUIRED_GO_VERSION" ]; then
   echo "Error: Go $REQUIRED_GO_VERSION is required. Installed: $INSTALLED_GO_VERSION"
   exit 1
 fi
-
-SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-cd $SCRIPT_DIR
 
 rm -f ./libkubo_linux_*.so ./libkubo_linux_*.h
 

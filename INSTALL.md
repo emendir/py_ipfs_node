@@ -46,8 +46,9 @@ pip install ipfs_node
    ```bash
    rm -f src/ipfs_node/lib/libkubo* # OPTIONAL: Remove the compiled library
    
-   ./src/libkubo/compile_linux.sh  # Linux
-   ./src/libkubo/compile_android.sh  # Android
+   ./compile/compile.sh linux    # Linux
+   ./compile/compile.sh android  # Android
+   ./compile/compile.sh current  # Current platform
    pip install -e .
    ```
 

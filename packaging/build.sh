@@ -1,11 +1,14 @@
 #!/bin/bash
 
+set -euo pipefail # Exit if any command fails
+
+# the absolute path of this script's directory
+SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+
 # Build script for ipfs_node
-
-set -e  # Exit on error
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+# Navigate to project root (parent of packaging directory)
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_ROOT"
 
 show_help() {
     cat << EOF
@@ -37,13 +40,13 @@ clean_build() {
 
 build_current() {
     echo "Building wheel for current platform..."
-    python build_platform_wheels.py --current-platform
+    python packaging/build_platform_wheels.py --current-platform
     echo "Build complete. Check dist/ directory for the wheel."
 }
 
 build_all() {
     echo "Building wheels for all platforms..."
-    python build_platform_wheels.py
+    python packaging/build_platform_wheels.py
     echo "All builds complete. Check dist/ directory for wheels."
 }
 

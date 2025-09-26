@@ -91,7 +91,10 @@ except Exception as e:
 
 def main():
     """Main function to test all wheels."""
-    dist_dir = Path("dist")
+    # Script is in /packaging directory, so project root is parent
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    dist_dir = project_root / "dist"
     wheels = list(dist_dir.glob("*.whl"))
 
     if not wheels:

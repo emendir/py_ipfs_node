@@ -11,24 +11,24 @@ The `ipfs_node` package includes compiled Go libraries (libkubo) for different p
 ### Build for Current Platform
 ```bash
 # Using the build script
-./build.sh current
+./packaging/build.sh current
 
 # Or directly with Python
-python build_platform_wheels.py --current-platform
+python packaging/build_platform_wheels.py --current-platform
 ```
 
 ### Build for All Platforms
 ```bash
 # Using the build script
-./build.sh all
+./packaging/build.sh all
 
 # Or directly with Python
-python build_platform_wheels.py
+python packaging/build_platform_wheels.py
 ```
 
 ### Clean Build Artifacts
 ```bash
-./build.sh clean
+./packaging/build.sh clean
 ```
 
 ## How It Works
@@ -74,12 +74,13 @@ To build wheels for all platforms, you need:
 
 1. **Pre-compiled Libraries**: All the platform-specific `.so`, `.dll`, `.dylib`, and `.h` files must exist in `src/libkubo/`.
 
-2. **Compilation Scripts**: Use the existing compilation scripts to generate libraries:
+2. **Compilation Scripts**: Use the compilation scripts to generate libraries:
    ```bash
-   ./src/libkubo/compile_linux.sh     # For Linux variants
-   ./src/libkubo/compile_windows.sh   # For Windows
-   ./src/libkubo/compile_android.sh   # For Android
-   ./src/libkubo/compile_macos.sh     # For macOS
+   ./compile/compile.sh linux     # For Linux variants
+   ./compile/compile.sh windows   # For Windows
+   ./compile/compile.sh android   # For Android
+   ./compile/compile.sh macos     # For macOS
+   ./compile/compile.sh all       # For all platforms
    ```
 
 ## Configuration Files
@@ -141,7 +142,7 @@ To build wheels for distribution:
 
 1. Use the existing compilation scripts on each target platform
 2. Collect all compiled libraries in one location
-3. Run `python build_platform_wheels.py` to generate all platform-specific wheels
+3. Run `python packaging/build_platform_wheels.py` to generate all platform-specific wheels
 4. Upload each wheel to PyPI as a separate distribution
 
 This allows users to automatically download only the wheel appropriate for their platform.
