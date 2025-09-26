@@ -1,9 +1,9 @@
-import pip
 from setuptools import setup, find_packages, Extension
 import subprocess
 import os
 import platform
 import sys
+import glob
 from setuptools.command.build_py import build_py
 from setuptools.command.install import install
 from setuptools.command.develop import develop
@@ -11,8 +11,125 @@ from setuptools.command.develop import develop
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def is_android() -> bool:
+    """Check if OS is android."""
+    if "ANDROID_ROOT" in os.environ and "ANDROID_DATA" in os.environ:
+        return True
+    return (
+        "android" in platform.release().lower()
+        or "android" in platform.version().lower()
+    )
+
+
+def get_libraries_for_platform(target_platform):
+    """Get library files for a specific target platform tag."""
+    # Platform tag to library file mapping
+    platform_mapping = {
+        "manylinux2014_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
+        "manylinux2014_aarch64": [
+            "libkubo_linux_arm64.so",
+            "libkubo_linux_arm64.h",
+            "libkubo_android_arm64.so",
+            "libkubo_android_arm64.h",
+        ],
+        "manylinux2014_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
+        "win_amd64": [
+            "libkubo_windows_x86_64.dll",
+            "libkubo_windows_x86_64.h",
+            "libkubo_linux_x86_64.h",
+        ],
+        "macosx_10_9_x86_64": ["libkubo.dylib", "libkubo.h"],
+    }
+
+    platform_files = platform_mapping.get(target_platform, [])
+
+    # Filter to only include files that actually exist
+    libkubo_dir = os.path.join(PROJ_DIR, "src", "libkubo")
+    existing_files = []
+    for filename in platform_files:
+        filepath = os.path.join(libkubo_dir, filename)
+        if os.path.exists(filepath):
+            existing_files.append(filename)
+
+    return existing_files
+
+
+def get_platform_libraries():
+    """Get platform-specific library files to include in the wheel."""
+    # Check if target platform is overridden via environment variable
+    target_platform = os.environ.get("TARGET_PLATFORM")
+    if target_platform:
+        return get_libraries_for_platform(target_platform)
+
+    system = platform.system()
+    machine = platform.machine().lower()
+
+    libkubo_dir = os.path.join(PROJ_DIR, "src", "libkubo")
+    platform_files = []
+
+    if system == "Windows":
+        if machine in ("x86_64", "amd64"):
+            platform_files.extend(
+                [
+                    "libkubo_windows_x86_64.dll",
+                    "libkubo_windows_x86_64.h",
+                    "libkubo_linux_x86_64.h",  # Used as fallback header
+                ]
+            )
+        else:
+            raise RuntimeError(f"Unsupported Windows architecture: {machine}")
+
+    elif system == "Darwin":
+        platform_files.extend(["libkubo.dylib", "libkubo.h"])
+
+    elif system == "Linux":
+        if is_android():
+            if machine in ("aarch64", "arm64"):
+                platform_files.extend(
+                    ["libkubo_android_arm64.so", "libkubo_android_arm64.h"]
+                )
+            else:
+                raise RuntimeError(f"Unsupported Android arch: {machine}")
+        else:
+            if machine in ("x86_64", "amd64"):
+                platform_files.extend(
+                    ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"]
+                )
+            elif machine in ("aarch64", "arm64"):
+                platform_files.extend(
+                    [
+                        "libkubo_linux_arm64.so",
+                        "libkubo_linux_arm64.h",
+                        "libkubo_android_arm64.so",
+                        "libkubo_android_arm64.h",
+                    ]
+                )
+            elif machine.startswith("armv7") or machine == "armv7l":
+                platform_files.extend(
+                    ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"]
+                )
+            else:
+                raise RuntimeError(f"Unsupported Linux architecture: {machine}")
+    else:
+        raise RuntimeError(f"Unsupported platform: {system} {machine}")
+
+    # Filter to only include files that actually exist
+    existing_files = []
+    for filename in platform_files:
+        filepath = os.path.join(libkubo_dir, filename)
+        if os.path.exists(filepath):
+            existing_files.append(filename)
+
+    return existing_files
+
+
 def compile_go_library():
     """Compile the Go shared library."""
+    # Skip compilation if SKIP_GO_BUILD environment variable is set
+    if os.environ.get("SKIP_GO_BUILD"):
+        print("Skipping Go compilation (SKIP_GO_BUILD is set)")
+        return
+
     print("Compiling Go shared library...")
 
     # Define Go source directory
@@ -24,7 +141,10 @@ def compile_go_library():
             ["go", "version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
     except (subprocess.SubprocessError, FileNotFoundError):
-        raise RuntimeError("Go compiler not found. Please install Go 1.19 or later.")
+        print(
+            "Go compiler not found. Skipping Go compilation (assuming pre-compiled libraries exist)"
+        )
+        return
 
     # Build shared library for the current platform
     if not os.path.exists(libkubo_dir):
@@ -56,8 +176,12 @@ def compile_go_library():
     build_cmd = ["go", "build", "-buildmode=c-shared", "-o", output_path, libkubo_dir]
 
     print(f"Running: {' '.join(build_cmd)}")
-    subprocess.check_call(build_cmd, cwd=libkubo_dir)
-    print(f"Successfully compiled shared library: {output_path}")
+    try:
+        subprocess.check_call(build_cmd, cwd=libkubo_dir)
+        print(f"Successfully compiled shared library: {output_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Go compilation failed: {e}")
+        print("Assuming pre-compiled libraries will be used instead")
 
 
 class BuildGoLibraryCommand(build_py):
@@ -84,33 +208,37 @@ class DevelopCommand(develop):
         super().run()
 
 
-# for some reason the following setup function can't handle the git URL in requirements.txt, so let's install it like so
-pip.main(["install", "-r", os.path.join(PROJ_DIR, "requirements.txt")])
+# Install requirements during setup (only in development mode)
+if "--develop" in sys.argv or "develop" in sys.argv:
+    try:
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "-r",
+                os.path.join(PROJ_DIR, "requirements.txt"),
+            ]
+        )
+    except subprocess.CalledProcessError:
+        print("Warning: Failed to install requirements.txt dependencies")
+
+# Get platform-specific library files
+platform_libraries = get_platform_libraries()
+print(f"Including platform-specific libraries: {platform_libraries}")
 
 setup(
-    name="ipfs_node",
-    version="0.1.12rc1",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     package_data={
-        "libkubo": ["*.dll", "*.dylib", "*.so", "*.h"],
+        "libkubo": platform_libraries,
     },
     include_package_data=True,
+    zip_safe=False,
     cmdclass={
         "build_py": BuildGoLibraryCommand,
         "install": InstallCommand,
         "develop": DevelopCommand,
     },
-    install_requires=["cffi>=1.15.0", "ipfs_tk"],
-    author="Emendir",
-    author_email="",
-    description="Run an IPFS node inside of python using kubo as a library.",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/emendir/py_ipfs_node",
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
-    ],
-    python_requires=">=3.7",
 )
