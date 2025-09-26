@@ -48,15 +48,15 @@ python build_platform_wheels.py
 
 The build system supports wheels for:
 
-- `manylinux2014_x86_64`: Linux 64-bit Intel/AMD (glibc 2.17+)
-- `manylinux2014_aarch64`: Linux 64-bit ARM (ARM64) **includes both Linux and Android libraries**
-- `manylinux2014_armv7l`: Linux 32-bit ARM (ARMv7)
+- `manylinux_2_17_x86_64`: Linux 64-bit Intel/AMD (glibc 2.17+)
+- `manylinux_2_17_aarch64`: Linux 64-bit ARM (ARM64) **includes both Linux and Android libraries**
+- `manylinux_2_17_armv7l`: Linux 32-bit ARM (ARMv7)
 - `win_amd64`: Windows 64-bit Intel/AMD
 - `macosx_10_9_x86_64`: macOS Intel (requires `libkubo.dylib`)
 
 ### Android Support
 
-Android ARM64 applications are supported through the `manylinux2014_aarch64` wheel, which contains both:
+Android ARM64 applications are supported through the `manylinux_2_17_aarch64` wheel, which contains both:
 - `libkubo_linux_arm64.so` - for regular Linux ARM64 systems
 - `libkubo_android_arm64.so` - for Android systems (optimized for Android's networking stack)
 
@@ -102,8 +102,8 @@ The generated wheels follow the standard Python wheel naming convention:
 
 Examples:
 ```
-ipfs_node-0.1.12rc1-py3-none-manylinux2014_x86_64.whl
-ipfs_node-0.1.12rc1-py3-none-manylinux2014_aarch64.whl
+ipfs_node-0.1.12rc1-py3-none-manylinux_2_17_x86_64.whl
+ipfs_node-0.1.12rc1-py3-none-manylinux_2_17_aarch64.whl
 ipfs_node-0.1.12rc1-py3-none-win_amd64.whl
 ```
 

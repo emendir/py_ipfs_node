@@ -19,17 +19,17 @@ DIST_DIR = PROJ_DIR / "dist"
 
 # Platform configurations: (platform_tag, library_files)
 PLATFORMS = {
-    "manylinux2014_x86_64": [
+    "manylinux_2_17_x86_64": [
         "libkubo_linux_x86_64.so",
         "libkubo_linux_x86_64.h"
     ],
-    "manylinux2014_aarch64": [
+    "manylinux_2_17_aarch64": [
         "libkubo_linux_arm64.so",
         "libkubo_linux_arm64.h",
         "libkubo_android_arm64.so",
         "libkubo_android_arm64.h"
     ],
-    "manylinux2014_armv7l": [
+    "manylinux_2_17_armv7l": [
         "libkubo_linux_armhf.so",
         "libkubo_linux_armhf.h"
     ],
@@ -144,11 +144,11 @@ def get_current_platform_tag():
         return "macosx_10_9_x86_64"
     elif system == "Linux":
         if machine in ("x86_64", "amd64"):
-            return "manylinux2014_x86_64"
+            return "manylinux_2_17_x86_64"
         elif machine in ("aarch64", "arm64"):
-            return "manylinux2014_aarch64"
+            return "manylinux_2_17_aarch64"
         elif machine.startswith("armv7") or machine == "armv7l":
-            return "manylinux2014_armv7l"
+            return "manylinux_2_17_armv7l"
         else:
             raise RuntimeError(f"Unsupported Linux architecture: {machine}")
     else:

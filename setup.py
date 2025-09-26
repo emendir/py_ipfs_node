@@ -31,14 +31,14 @@ def get_libraries_for_platform(target_platform):
     """Get library files for a specific target platform tag."""
     # Platform tag to library file mapping
     platform_mapping = {
-        "manylinux2014_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
-        "manylinux2014_aarch64": [
+        "manylinux_2_17_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
+        "manylinux_2_17_aarch64": [
             "libkubo_linux_arm64.so",
             "libkubo_linux_arm64.h",
             "libkubo_android_arm64.so",
             "libkubo_android_arm64.h",
         ],
-        "manylinux2014_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
+        "manylinux_2_17_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
         "win_amd64": [
             "libkubo_windows_x86_64.dll",
             "libkubo_windows_x86_64.h",
