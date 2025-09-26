@@ -40,8 +40,6 @@ def get_libraries_for_platform(target_platform):
         "manylinux_2_17_aarch64": [
             "libkubo_linux_arm64.so",
             "libkubo_linux_arm64.h",
-            "libkubo_android_arm64.so",
-            "libkubo_android_arm64.h",
         ],
         "manylinux_2_17_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
         "win_amd64": [
@@ -50,6 +48,10 @@ def get_libraries_for_platform(target_platform):
             "libkubo_linux_x86_64.h",
         ],
         "macosx_10_9_x86_64": ["libkubo.dylib", "libkubo.h"],
+        "android_28_arm64_v8a": [
+            "libkubo_android_28_arm64_v8a.so",
+            "libkubo_android_28_arm64_v8a.h",
+        ],
     }
 
     platform_files = platform_mapping.get(target_platform, [])
@@ -97,7 +99,7 @@ def get_platform_libraries():
         if is_android():
             if machine in ("aarch64", "arm64"):
                 platform_files.extend(
-                    ["libkubo_android_arm64.so", "libkubo_android_arm64.h"]
+                    ["libkubo_android_28_arm64_v8a.so", "libkubo_android_28_arm64_v8a.h"]
                 )
             else:
                 raise RuntimeError(f"Unsupported Android arch: {machine}")
@@ -111,8 +113,6 @@ def get_platform_libraries():
                     [
                         "libkubo_linux_arm64.so",
                         "libkubo_linux_arm64.h",
-                        "libkubo_android_arm64.so",
-                        "libkubo_android_arm64.h",
                     ]
                 )
             elif machine.startswith("armv7") or machine == "armv7l":

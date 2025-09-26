@@ -25,9 +25,7 @@ PLATFORMS = {
     ],
     "manylinux_2_17_aarch64": [
         "libkubo_linux_arm64.so",
-        "libkubo_linux_arm64.h",
-        "libkubo_android_arm64.so",
-        "libkubo_android_arm64.h"
+        "libkubo_linux_arm64.h"
     ],
     "manylinux_2_17_armv7l": [
         "libkubo_linux_armhf.so",
@@ -41,6 +39,10 @@ PLATFORMS = {
     "macosx_10_9_x86_64": [
         "libkubo.dylib",
         "libkubo.h"
+    ],
+    "android_28_arm64_v8a": [
+        "libkubo_android_28_arm64_v8a.so",
+        "libkubo_android_28_arm64_v8a.h"
     ],
 }
 

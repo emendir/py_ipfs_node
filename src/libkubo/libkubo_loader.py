@@ -38,8 +38,8 @@ elif system == "Darwin":
 elif system == "Linux":
     if is_android():
         if machine in ("aarch64", "arm64"):
-            lib_name = "libkubo_android_arm64.so"
-            header_name = "libkubo_android_arm64.h"
+            lib_name = "libkubo_android_28_arm64_v8a.so"
+            header_name = "libkubo_android_28_arm64_v8a.h"
         else:
             raise RuntimeError(f"Unsupported Android arch: {machine}")
     else:
