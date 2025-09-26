@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages, Extension, Distribution
 import subprocess
 import os
 import platform
@@ -9,6 +9,12 @@ from setuptools.command.install import install
 from setuptools.command.develop import develop
 
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+class BinaryDistribution(Distribution):
+    """Custom Distribution class to mark package as containing platform-specific binaries."""
+    def has_ext_modules(self):
+        return True
 
 
 def is_android() -> bool:
@@ -229,7 +235,8 @@ platform_libraries = get_platform_libraries()
 print(f"Including platform-specific libraries: {platform_libraries}")
 
 setup(
-    packages=find_packages(where="src"),
+    distclass=BinaryDistribution,
+    packages=find_packages(where="src", include=["ipfs_node*", "libkubo*"]),
     package_dir={"": "src"},
     package_data={
         "libkubo": platform_libraries,
