@@ -8,6 +8,11 @@ from setuptools.command.build_py import build_py
 from setuptools.command.install import install
 from setuptools.command.develop import develop
 
+try:
+    from wheel.bdist_wheel import bdist_wheel
+except ImportError:
+    bdist_wheel = None
+
 PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -214,6 +219,21 @@ class DevelopCommand(develop):
         super().run()
 
 
+if bdist_wheel:
+    class CustomBdistWheel(bdist_wheel):
+        """Custom bdist_wheel command to set python and abi tags."""
+
+        def get_tag(self):
+            """Override wheel tags to use py3-none-{platform}."""
+            # Get the original tags
+            python, abi, plat = super().get_tag()
+
+            # Override python and abi tags
+            return "py3", "none", plat
+else:
+    CustomBdistWheel = None
+
+
 # Install requirements during setup (only in development mode)
 if "--develop" in sys.argv or "develop" in sys.argv:
     try:
@@ -247,5 +267,6 @@ setup(
         "build_py": BuildGoLibraryCommand,
         "install": InstallCommand,
         "develop": DevelopCommand,
+        **({} if CustomBdistWheel is None else {"bdist_wheel": CustomBdistWheel}),
     },
 )
