@@ -1,5 +1,5 @@
 #!/bin/bash
-## NOTE: This script should be run on linux. It produces dylib files to be used on macOS.
+## NOTE: This script should be run on macOS. It produces dylib files natively.
 
 set -euo pipefail # Exit if any command fails
 
@@ -25,13 +25,22 @@ rm -f ./libkubo_darwin_*.dylib ./libkubo_darwin_*.h
 
 go mod tidy
 
-echo "Building libkubo for macOS x86_64..."
-CC=o64-clang CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 \
-  go build -v -buildmode=c-shared -o ./libkubo_darwin_x86_64.dylib .
+# Detect current architecture
+CURRENT_ARCH=$(uname -m)
 
-echo "Building libkubo for macOS arm64..."
-CC=oa64-clang CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 \
-  go build -v -buildmode=c-shared -o ./libkubo_darwin_arm64.dylib .
+if [ "$CURRENT_ARCH" = "arm64" ]; then
+  echo "Building libkubo for macOS arm64 (native)..."
+  CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -v -buildmode=c-shared -o ./libkubo_darwin_arm64.dylib .
+  
+  echo "Building libkubo for macOS x86_64 (cross-compile)..."
+  CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -buildmode=c-shared -o ./libkubo_darwin_x86_64.dylib .
+else
+  echo "Building libkubo for macOS x86_64 (native)..."
+  CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -v -buildmode=c-shared -o ./libkubo_darwin_x86_64.dylib .
+  
+  echo "Building libkubo for macOS arm64 (cross-compile)..."
+  CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -v -buildmode=c-shared -o ./libkubo_darwin_arm64.dylib .
+fi
 
 echo "Builds completed"
 ls -la ./libkubo_darwin_*.dylib
