@@ -32,8 +32,15 @@ if system == "Windows":
         raise RuntimeError(f"Unsupported Windows architecture: {machine}")
 
 elif system == "Darwin":
-    lib_name = "libkubo.dylib"
-    header_name = "libkubo.h"
+    if machine in ("x86_64", "amd64"):
+        lib_name = "libkubo_darwin_x86_64.dylib"
+        header_name = "libkubo_darwin_x86_64.h"
+    elif machine in ("aarch64", "arm64"):
+        lib_name = "libkubo_darwin_arm64.dylib"
+        header_name = "libkubo_darwin_arm64.h"
+    else:
+        raise RuntimeError(f"Unsupported MacOS architecture: {machine}")
+
 
 elif system == "Linux":
     if is_android():
