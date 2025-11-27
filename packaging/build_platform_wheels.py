@@ -20,30 +20,31 @@ DIST_DIR = PROJ_DIR / "dist"
 
 # Platform configurations: (platform_tag, library_files)
 PLATFORMS = {
-    "manylinux_2_17_x86_64": [
-        "libkubo_linux_x86_64.so",
-        "libkubo_linux_x86_64.h"
-    ],
-    "manylinux_2_17_aarch64": [
-        "libkubo_linux_arm64.so",
-        "libkubo_linux_arm64.h"
-    ],
-    "manylinux_2_17_armv7l": [
-        "libkubo_linux_armhf.so",
-        "libkubo_linux_armhf.h"
-    ],
+    "manylinux_2_17_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
+    "manylinux_2_17_aarch64": ["libkubo_linux_arm64.so", "libkubo_linux_arm64.h"],
+    "manylinux_2_17_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
     "win_amd64": [
         "libkubo_windows_x86_64.dll",
         "libkubo_windows_x86_64.h",
-        "libkubo_linux_x86_64.h"  # Fallback header for Windows
+        "libkubo_linux_x86_64.h",  # Fallback header for Windows
+    ],
+    "macosx_10_9_universal2": [
+        "libkubo_darwin_arm64.dylib",
+        "libkubo_darwin_arm64.h",
+        "libkubo_darwin_x86_64.dylib",
+        "libkubo_darwin_x86_64.h",
+    ],
+    "macosx_10_9_arm64": [
+        "libkubo_darwin_arm64.dylib",
+        "libkubo_darwin_arm64.h",
     ],
     "macosx_10_9_x86_64": [
-        "libkubo.dylib",
-        "libkubo.h"
+        "libkubo_darwin_x86_64.dylib",
+        "libkubo_darwin_x86_64.h",
     ],
     "android_28_arm64_v8a": [
         "libkubo_android_28_arm64_v8a.so",
-        "libkubo_android_28_arm64_v8a.h"
+        "libkubo_android_28_arm64_v8a.h",
     ],
 }
 
@@ -110,11 +111,7 @@ def build_wheel_for_platform(platform_tag, platform_files):
                 shutil.rmtree(path, ignore_errors=True)
 
     # Build the wheel
-    cmd = [
-        sys.executable, "setup.py",
-        "bdist_wheel",
-        "--plat-name", platform_tag
-    ]
+    cmd = [sys.executable, "setup.py", "bdist_wheel", "--plat-name", platform_tag]
 
     # Set environment to skip Go compilation for cross-platform builds
     env = os.environ.copy()
@@ -123,7 +120,9 @@ def build_wheel_for_platform(platform_tag, platform_files):
 
     print(f"Running: {' '.join(cmd)}")
     try:
-        result = subprocess.run(cmd, cwd=PROJ_DIR, check=True, capture_output=True, text=True, env=env)
+        result = subprocess.run(
+            cmd, cwd=PROJ_DIR, check=True, capture_output=True, text=True, env=env
+        )
         print("Build successful!")
         return True
     except subprocess.CalledProcessError as e:

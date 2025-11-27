@@ -2,6 +2,7 @@
 
 - test all features
 - improve API
+- check utils hard-coded bootstrap
 
 ## libkubo
 

@@ -18,6 +18,7 @@ PROJ_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class BinaryDistribution(Distribution):
     """Custom Distribution class to mark package as containing platform-specific binaries."""
+
     def has_ext_modules(self):
         return True
 
@@ -32,27 +33,41 @@ def is_android() -> bool:
     )
 
 
+# Platform configurations: (platform_tag, library_files)
+PLATFORMS = {
+    "manylinux_2_17_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
+    "manylinux_2_17_aarch64": ["libkubo_linux_arm64.so", "libkubo_linux_arm64.h"],
+    "manylinux_2_17_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
+    "win_amd64": [
+        "libkubo_windows_x86_64.dll",
+        "libkubo_windows_x86_64.h",
+        "libkubo_linux_x86_64.h",  # Fallback header for Windows
+    ],
+    "macosx_10_9_universal2": [
+        "libkubo_darwin_arm64.dylib",
+        "libkubo_darwin_arm64.h",
+        "libkubo_darwin_x86_64.dylib",
+        "libkubo_darwin_x86_64.h",
+    ],
+    "macosx_10_9_arm64": [
+        "libkubo_darwin_arm64.dylib",
+        "libkubo_darwin_arm64.h",
+    ],
+    "macosx_10_9_x86_64": [
+        "libkubo_darwin_x86_64.dylib",
+        "libkubo_darwin_x86_64.h",
+    ],
+    "android_28_arm64_v8a": [
+        "libkubo_android_28_arm64_v8a.so",
+        "libkubo_android_28_arm64_v8a.h",
+    ],
+}
+
+
 def get_libraries_for_platform(target_platform):
     """Get library files for a specific target platform tag."""
     # Platform tag to library file mapping
-    platform_mapping = {
-        "manylinux_2_17_x86_64": ["libkubo_linux_x86_64.so", "libkubo_linux_x86_64.h"],
-        "manylinux_2_17_aarch64": [
-            "libkubo_linux_arm64.so",
-            "libkubo_linux_arm64.h",
-        ],
-        "manylinux_2_17_armv7l": ["libkubo_linux_armhf.so", "libkubo_linux_armhf.h"],
-        "win_amd64": [
-            "libkubo_windows_x86_64.dll",
-            "libkubo_windows_x86_64.h",
-            "libkubo_linux_x86_64.h",
-        ],
-        "macosx_10_9_x86_64": ["libkubo.dylib", "libkubo.h"],
-        "android_28_arm64_v8a": [
-            "libkubo_android_28_arm64_v8a.so",
-            "libkubo_android_28_arm64_v8a.h",
-        ],
-    }
+    platform_mapping = PLATFORMS
 
     platform_files = platform_mapping.get(target_platform, [])
 
@@ -99,7 +114,10 @@ def get_platform_libraries():
         if is_android():
             if machine in ("aarch64", "arm64"):
                 platform_files.extend(
-                    ["libkubo_android_28_arm64_v8a.so", "libkubo_android_28_arm64_v8a.h"]
+                    [
+                        "libkubo_android_28_arm64_v8a.so",
+                        "libkubo_android_28_arm64_v8a.h",
+                    ]
                 )
             else:
                 raise RuntimeError(f"Unsupported Android arch: {machine}")
@@ -220,6 +238,7 @@ class DevelopCommand(develop):
 
 
 if bdist_wheel:
+
     class CustomBdistWheel(bdist_wheel):
         """Custom bdist_wheel command to set python and abi tags."""
 

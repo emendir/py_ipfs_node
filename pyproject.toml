@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ipfs_node"
-version = "0.1.12rc2"
+version = "0.1.12rc6"
 description = "Run an IPFS node inside of python using kubo as a library."
 readme = "README.md"
 requires-python = ">=3.7"
